@@ -44,7 +44,14 @@ public sealed class OracleDrawingStore : IDrawingStore
         var monada = (await con.QueryAsync<(long, string)>(
             $"select HSTR_ID, TITLE from {_commonOwner}.G11HAF_STRUCTURE order by TITLE"))
             .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
-        return new LookupData(eidos, kathg, ypokat, xoros, monada);
+        // Search filter shows only units that actually have (non-deleted) drawings.
+        var monadaInUse = (await con.QueryAsync<(long, string)>(
+            $@"select h.HSTR_ID, h.TITLE from {_commonOwner}.G11HAF_STRUCTURE h
+               where exists (select 1 from {_owner}.C16PE_SXEDIO s
+                             where s.HSTR_ID = h.HSTR_ID and nvl(s.DELETED, 0) = 0)
+               order by h.TITLE"))
+            .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
+        return new LookupData(eidos, kathg, ypokat, xoros, monada, monadaInUse);
     }
 
     private string BaseSelect => $@"
@@ -76,8 +83,7 @@ public sealed class OracleDrawingStore : IDrawingStore
         s.HSTR_ID         as HstrId,
         s.MAZIKI_KATAXWRISI as MazikiKataxwrisi,
         s.DATE_INS        as DateIns,
-        s.USER_INS        as UserIns,
-        cast(null as number) as SizeBytes";
+        s.USER_INS        as UserIns";
 
     public async Task<SearchResult> SearchAsync(SearchParams p, CancellationToken ct = default)
     {

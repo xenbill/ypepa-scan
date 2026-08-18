@@ -114,7 +114,7 @@ export default function App() {
           </div>
           <div className="field">
             <span>Μονάδα</span>
-            <ComboSelect options={lookups?.monada ?? []} value={filters.hstr} allLabel="Όλες" onChange={setFilter('hstr')} />
+            <ComboSelect options={lookups?.monadaInUse ?? []} value={filters.hstr} allLabel="Όλες" onChange={setFilter('hstr')} />
           </div>
           <div className="field">
             <span>Είδος σχεδίου</span>

@@ -73,21 +73,27 @@ public sealed class DemoDrawingStore : IDrawingStore
     public Task<LookupData> GetLookupsAsync(CancellationToken ct = default)
     {
         var db = Load();
-        return Task.FromResult(new LookupData(db.EidosSxed, db.KathgoriaErg, db.YpokatErg, db.XorosApoth, db.Monada));
+        var used = db.Drawings.Where(d => !d.Deleted && d.HstrId is not null).Select(d => d.HstrId!.Value).ToHashSet();
+        var monadaInUse = db.Monada.Where(m => used.Contains(m.Id)).ToList();
+        return Task.FromResult(new LookupData(db.EidosSxed, db.KathgoriaErg, db.YpokatErg, db.XorosApoth, db.Monada, monadaInUse));
     }
 
     private DrawingRow ToRow(DemoDb db, DemoRow d)
     {
         string? Name(IEnumerable<Lookup> l, long? id) => l.FirstOrDefault(x => x.Id == id)?.Name;
-        long? size = File.Exists(FilePath(d.SxedioId)) ? new FileInfo(FilePath(d.SxedioId)).Length : null;
-        return new DrawingRow(d.SxedioId, d.KodikosErg, d.ArithmosSxed, d.TitlosErg, d.TitlosSxed,
-            d.PerigrafhSxed, d.PerigrafhErg, d.Hmer,
-            Name(db.EidosSxed, d.EidosId), Name(db.KathgoriaErg, d.KathgId),
-            Name(db.YpokatErg, d.YpokatId), Name(db.XorosApoth, d.XorosId),
-            Name(db.Monada, d.HstrId),
-            d.EidosId, d.KathgId, d.YpokatId, d.XorosId, d.HstrId,
-            d.MazikiKataxwrisi ?? 0,
-            d.DateIns, d.UserIns, size);
+        return new DrawingRow
+        {
+            SxedioId = d.SxedioId, KodikosErg = d.KodikosErg, ArithmosSxed = d.ArithmosSxed,
+            TitlosErg = d.TitlosErg, TitlosSxed = d.TitlosSxed,
+            PerigrafhSxed = d.PerigrafhSxed, PerigrafhErg = d.PerigrafhErg, Hmer = d.Hmer,
+            EidosSxed = Name(db.EidosSxed, d.EidosId), KathgoriaErg = Name(db.KathgoriaErg, d.KathgId),
+            YpokathgoriaErg = Name(db.YpokatErg, d.YpokatId), XorosApoth = Name(db.XorosApoth, d.XorosId),
+            Monada = Name(db.Monada, d.HstrId),
+            EidosSxedId = d.EidosId, KathgErgId = d.KathgId, YpokatErgId = d.YpokatId,
+            XorosApothId = d.XorosId, HstrId = d.HstrId,
+            MazikiKataxwrisi = d.MazikiKataxwrisi ?? 0,
+            DateIns = d.DateIns, UserIns = d.UserIns,
+        };
     }
 
     public Task<SearchResult> SearchAsync(SearchParams p, CancellationToken ct = default)

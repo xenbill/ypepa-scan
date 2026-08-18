@@ -26,6 +26,7 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
       setLastId(id)
       // New drawing must appear in any search page.
       queryClient.invalidateQueries({ queryKey: ['drawings'] })
+      queryClient.invalidateQueries({ queryKey: ['lookups'] }) // Μονάδες-in-use may change
     },
   })
 

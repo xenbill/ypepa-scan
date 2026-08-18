@@ -13,6 +13,8 @@ export interface LookupData {
   xorosApoth: Lookup[]
   /** COMMON.G11HAF_STRUCTURE (HSTR_ID / TITLE) */
   monada: Lookup[]
+  /** Subset of monada with at least one live drawing — search filter only */
+  monadaInUse: Lookup[]
 }
 
 export interface DrawingRow {
@@ -37,7 +39,6 @@ export interface DrawingRow {
   mazikiKataxwrisi: number | null
   dateIns: string | null
   userIns: string | null
-  sizeBytes: number | null
 }
 
 export interface SearchResult {

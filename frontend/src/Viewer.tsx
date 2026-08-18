@@ -22,6 +22,7 @@ export default function Viewer({ id, onClose }: ViewerProps) {
     mutationFn: () => deleteDrawing(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drawings'] })
+      queryClient.invalidateQueries({ queryKey: ['lookups'] }) // Μονάδες-in-use may change
       queryClient.removeQueries({ queryKey: ['drawing', id] })
       onClose()
     },
@@ -226,6 +227,7 @@ function MetaEditForm({ drawing, lookups, onDone }: {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drawing', drawing.sxedioId] })
       queryClient.invalidateQueries({ queryKey: ['drawings'] })
+      queryClient.invalidateQueries({ queryKey: ['lookups'] }) // Μονάδες-in-use may change
       onDone()
     },
   })

@@ -7,31 +7,39 @@ public record LookupData(
     IReadOnlyList<Lookup> KathgoriaErg,
     IReadOnlyList<Lookup> YpokatErg,
     IReadOnlyList<Lookup> XorosApoth,
-    IReadOnlyList<Lookup> Monada);
+    IReadOnlyList<Lookup> Monada,
+    /// <summary>Subset of Monada referenced by at least one live drawing (search filter only).</summary>
+    IReadOnlyList<Lookup> MonadaInUse);
 
-public record DrawingRow(
-    long SxedioId,
-    string? KodikosErg,
-    string? ArithmosSxed,
-    string? TitlosErg,
-    string? TitlosSxed,
-    string? PerigrafhSxed,
-    string? PerigrafhErg,
-    DateTime? Hmer,
-    string? EidosSxed,
-    string? KathgoriaErg,
-    string? YpokathgoriaErg,
-    string? XorosApoth,
-    string? Monada,
-    long? EidosSxedId,
-    long? KathgErgId,
-    long? YpokatErgId,
-    long? XorosApothId,
-    long? HstrId,
-    int? MazikiKataxwrisi,
-    DateTime? DateIns,
-    string? UserIns,
-    long? SizeBytes);
+/// <summary>
+/// Init-property record (not positional): Dapper needs a parameterless constructor to
+/// map Oracle NUMBER (decimal) columns onto long/int with conversion. A positional
+/// record demands an exact-type constructor match and fails at runtime against Oracle.
+/// </summary>
+public record DrawingRow
+{
+    public long SxedioId { get; init; }
+    public string? KodikosErg { get; init; }
+    public string? ArithmosSxed { get; init; }
+    public string? TitlosErg { get; init; }
+    public string? TitlosSxed { get; init; }
+    public string? PerigrafhSxed { get; init; }
+    public string? PerigrafhErg { get; init; }
+    public DateTime? Hmer { get; init; }
+    public string? EidosSxed { get; init; }
+    public string? KathgoriaErg { get; init; }
+    public string? YpokathgoriaErg { get; init; }
+    public string? XorosApoth { get; init; }
+    public string? Monada { get; init; }
+    public long? EidosSxedId { get; init; }
+    public long? KathgErgId { get; init; }
+    public long? YpokatErgId { get; init; }
+    public long? XorosApothId { get; init; }
+    public long? HstrId { get; init; }
+    public int? MazikiKataxwrisi { get; init; }
+    public DateTime? DateIns { get; init; }
+    public string? UserIns { get; init; }
+}
 
 public record SearchResult(IReadOnlyList<DrawingRow> Items, int Total, int Page, int PageSize);
 
