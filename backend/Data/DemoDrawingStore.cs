@@ -186,7 +186,7 @@ public sealed class DemoDrawingStore : IDrawingStore
             XorosId = meta.XorosId,
             HstrId = meta.HstrId,
             DateIns = DateTime.Now,
-            UserIns = meta.UserIns ?? Environment.UserName,
+            UserIns = meta.UserIns, // logged-in user (JWT name), set by the import endpoint
         });
         Save(db);
         return id;

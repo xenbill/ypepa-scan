@@ -3,13 +3,15 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Sxedia.Web.Auth.LoginService;
 
 namespace Sxedia.Web.Auth;
 
-public record LoginRequestDto(string Username, string Password);
+public record LoginRequestDto(string Username, string Password, int? Category);
 public record ChangePasswordRequestDto(string CurrentPassword, string NewPassword);
-public record UserDto(string Username, string FullName, string Role);
+public record UserDto(string Username, string FullName, string Role, int? Category);
 public record AuthResponseDto(DateTime ExpiresAt, UserDto User);
+public record AuthModeDto(bool DevLogin, IReadOnlyList<MisCategory> Categories);
 
 /// <summary>
 /// Cookie-carried JWT auth. Login issues a signed JWT and stores it in an
@@ -19,15 +21,30 @@ public record AuthResponseDto(DateTime ExpiresAt, UserDto User);
 /// Unauthenticated requests get a plain 401 (no login-page redirect), which the
 /// SPA handles. CSRF: SameSite=Lax cookie + all mutations are non-GET, so a
 /// cross-site page cannot make the browser send the cookie with a state-changing
-/// request. Credential check is the temporary dev user from Auth:* config — swap
-/// ValidateCredentials for the real user store later; the token plumbing stays.
+/// request. Credentials are checked by the registered <see cref="IAuthBackend"/>
+/// (Auth:DevLogin=true → config dev user, else the MIS LGNWS service). The
+/// employee category chosen at login is kept as a claim because the MIS
+/// change-password call needs it again.
 /// </summary>
 public static class JwtAuth
 {
     public const string CookieName = "sxedia_auth";
+    public const string CategoryClaim = "Category";
 
     public static void AddJwtAuthentication(this IServiceCollection services, IConfiguration cfg)
     {
+        var devLogin = cfg.GetValue<bool>("Auth:DevLogin");
+        if (devLogin)
+        {
+            services.AddSingleton<IAuthBackend, DevAuthBackend>();
+        }
+        else
+        {
+            services.Configure<LoginServiceOptions>(cfg.GetSection("Auth:LoginService"));
+            services.AddSingleton<MisLoginService>();
+            services.AddSingleton<IAuthBackend, MisAuthBackend>();
+        }
+
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -64,14 +81,20 @@ public static class JwtAuth
     {
         var auth = app.MapGroup("/api/auth");
 
-        auth.MapPost("login", (LoginRequestDto dto, HttpContext http, IConfiguration cfg, IWebHostEnvironment env) =>
-        {
-            if (!ValidateCredentials(dto.Username, dto.Password, cfg, env))
-                return Results.Unauthorized();
+        // Login page bootstrap: dev mode? which κατηγορίες προσωπικού to offer?
+        auth.MapGet("mode", async (IAuthBackend backend) =>
+            Results.Ok(new AuthModeDto(backend.IsDevLogin, await backend.GetCategoriesAsync())));
 
-            var user = new UserDto(dto.Username, dto.Username, "User");
+        auth.MapPost("login", async (LoginRequestDto dto, HttpContext http, IAuthBackend backend, IConfiguration cfg) =>
+        {
+            var result = await backend.LoginAsync(dto.Username ?? "", dto.Password ?? "", dto.Category, ClientIp(http));
+            if (!result.Success || result.User is null)
+                return Results.Json(new { error = result.Error }, statusCode: StatusCodes.Status401Unauthorized);
+
+            var user = new UserDto(result.User.Username, result.User.FullName, result.User.Role, result.User.Category);
             var (token, expiresAt) = GenerateAccessToken(user, cfg);
             http.Response.Cookies.Append(CookieName, token, CookieOptions(http, expiresAt));
+            Serilog.Log.Information("Login {User} (category {Category})", user.Username, user.Category);
             return Results.Ok(new AuthResponseDto(expiresAt, user));
         });
 
@@ -79,10 +102,7 @@ public static class JwtAuth
         {
             if (principal.Identity?.IsAuthenticated != true)
                 return Results.Unauthorized();
-            return Results.Ok(new UserDto(
-                principal.Identity.Name ?? "",
-                principal.FindFirstValue("FullName") ?? principal.Identity.Name ?? "",
-                principal.FindFirstValue(ClaimTypes.Role) ?? "User"));
+            return Results.Ok(CurrentUser(principal));
         }).RequireAuthorization();
 
         // Stateless tokens: logout = drop the cookie.
@@ -92,20 +112,35 @@ public static class JwtAuth
             return Results.Ok(new { message = "Logged out" });
         });
 
-        auth.MapPost("change-password", (ChangePasswordRequestDto dto, ClaimsPrincipal principal,
-            IConfiguration cfg, IWebHostEnvironment env) =>
+        auth.MapPost("change-password", async (ChangePasswordRequestDto dto, ClaimsPrincipal principal,
+            HttpContext http, IAuthBackend backend) =>
         {
-            var username = principal.Identity?.Name ?? "";
-            if (!ValidateCredentials(username, dto.CurrentPassword, cfg, env))
-                return Results.BadRequest(new { error = "Ο τρέχων κωδικός δεν είναι σωστός." });
             if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
                 return Results.BadRequest(new { error = "Ο νέος κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες." });
 
-            File.WriteAllText(PasswordFile(cfg, env), Hash(dto.NewPassword));
-            Serilog.Log.Information("Password changed by {User}", username);
+            var me = CurrentUser(principal);
+            var error = await backend.ChangePasswordAsync(me.Username, me.Category, dto.CurrentPassword ?? "", dto.NewPassword, ClientIp(http));
+            if (error is not null)
+                return Results.BadRequest(new { error });
+
+            Serilog.Log.Information("Password changed by {User}", me.Username);
             return Results.Ok(new { message = "Ο κωδικός άλλαξε." });
         }).RequireAuthorization();
     }
+
+    private static UserDto CurrentUser(ClaimsPrincipal principal)
+    {
+        var name = principal.Identity?.Name ?? "";
+        int? category = int.TryParse(principal.FindFirstValue(CategoryClaim), out var c) ? c : null;
+        return new UserDto(
+            name,
+            principal.FindFirstValue("FullName") ?? name,
+            principal.FindFirstValue(ClaimTypes.Role) ?? "User",
+            category);
+    }
+
+    private static string ClientIp(HttpContext http)
+        => http.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "";
 
     // HttpOnly: JS never sees the token. SameSite=Lax: sent on same-site requests and
     // top-level navigations (deep links from e-mail work), never on cross-site POSTs.
@@ -121,39 +156,20 @@ public static class JwtAuth
         IsEssential = true,
     };
 
-    // Password check: the config value is the initial password; once changed via the
-    // change-password page, the SHA-256 hash stored in auth.json takes precedence.
-    // (Temporary scheme — the real user store replaces all of this.)
-    private static bool ValidateCredentials(string username, string password, IConfiguration cfg, IWebHostEnvironment env)
-    {
-        if (!string.Equals(username, cfg["Auth:Username"] ?? "dev", StringComparison.OrdinalIgnoreCase))
-            return false;
-        var file = PasswordFile(cfg, env);
-        if (File.Exists(file))
-            return Hash(password) == File.ReadAllText(file).Trim();
-        return password == (cfg["Auth:Password"] ?? "dev");
-    }
-
-    private static string PasswordFile(IConfiguration cfg, IWebHostEnvironment env)
-        => string.IsNullOrWhiteSpace(cfg["Auth:PasswordFile"])
-            ? Path.Combine(env.ContentRootPath, "auth.json")
-            : cfg["Auth:PasswordFile"]!;
-
-    private static string Hash(string password)
-        => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-            Encoding.UTF8.GetBytes("sxedia:" + password)));
-
     private static (string Token, DateTime ExpiresAt) GenerateAccessToken(UserDto user, IConfiguration cfg)
     {
         var minutes = int.TryParse(cfg["Jwt:ExpiresInMinutes"], out var m) ? m : 480;
         var expiresAt = DateTime.Now.AddMinutes(minutes);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Role, user.Role),
-            new Claim("FullName", user.FullName),
+            new(ClaimTypes.Name, user.Username),
+            new(ClaimTypes.Role, user.Role),
+            new("FullName", user.FullName),
         };
+        if (user.Category is not null)
+            claims.Add(new Claim(CategoryClaim, user.Category.Value.ToString()));
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(cfg["Jwt:Key"]!));
         var token = new JwtSecurityToken(
             issuer: cfg["Jwt:Issuer"],

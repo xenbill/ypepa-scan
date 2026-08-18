@@ -8,6 +8,18 @@ export interface UserInfo {
   username: string
   fullName: string
   role: string
+  category: number | null
+}
+
+export interface AuthCategory {
+  id: number
+  name: string
+}
+
+/** Login page bootstrap: dev-user mode (no category) or MIS login (κατηγορία προσωπικού required). */
+export interface AuthMode {
+  devLogin: boolean
+  categories: AuthCategory[]
 }
 
 interface AuthResponse {
@@ -28,14 +40,19 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 // ---- auth ------------------------------------------------------------------
-export async function login(username: string, password: string): Promise<UserInfo> {
+export const getAuthMode = () => getJson<AuthMode>('/api/auth/mode')
+
+export async function login(username: string, password: string, category: number | null): Promise<UserInfo> {
   const r = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, category }),
   })
-  if (r.status === 401) throw new Error('Λάθος όνομα χρήστη ή κωδικός.')
-  if (!r.ok) throw new Error(`Σφάλμα διακομιστή (${r.status})`)
+  if (!r.ok) {
+    const body = (await r.json().catch(() => null)) as { error?: string } | null
+    if (r.status === 401) throw new Error(body?.error ?? 'Λάθος όνομα χρήστη ή κωδικός.')
+    throw new Error(body?.error ?? `Σφάλμα διακομιστή (${r.status})`)
+  }
   const auth = (await r.json()) as AuthResponse
   return auth.user
 }

@@ -1,16 +1,22 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { login } from '../api/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getAuthMode, login } from '../api/api'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [category, setCategory] = useState<number | null>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
+  // Dev mode: plain username/password. MIS mode: ΑΜΑ + κατηγορία προσωπικού (list comes from the login service).
+  const mode = useQuery({ queryKey: ['auth-mode'], queryFn: getAuthMode, staleTime: 5 * 60_000 })
+  const misLogin = mode.data ? !mode.data.devLogin : false
+  const categories = mode.data?.categories ?? []
+
   const mutation = useMutation({
-    mutationFn: () => login(username, password),
+    mutationFn: () => login(username, password, misLogin ? category : null),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['me'] })
       navigate('/', { replace: true })
@@ -41,13 +47,24 @@ export default function LoginPage() {
         <h1>Σχέδια ΥΠΕΠΑ</h1>
         <p className="login-note">Αρχείο τεχνικών σχεδίων — συνδεθείτε για να συνεχίσετε.</p>
         <form onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
-          <label>Όνομα χρήστη
+          {misLogin && (
+            <label>Κατηγορία προσωπικού
+              <select value={category ?? ''} onChange={(e) => setCategory(e.target.value ? Number(e.target.value) : null)} required>
+                <option value="">— επιλέξτε —</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </label>
+          )}
+          <label>{misLogin ? 'ΑΜΑ' : 'Όνομα χρήστη'}
             <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="username" />
           </label>
           <label>Κωδικός
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
           </label>
-          <button className="primary" type="submit" disabled={mutation.isPending}>
+          {misLogin && !mode.isLoading && categories.length === 0 && (
+            <p className="status-err">Η υπηρεσία σύνδεσης δεν επέστρεψε κατηγορίες προσωπικού.</p>
+          )}
+          <button className="primary" type="submit" disabled={mutation.isPending || mode.isLoading}>
             {mutation.isPending ? 'Σύνδεση…' : 'Σύνδεση'}
           </button>
           {mutation.isError && <p className="status-err">{(mutation.error as Error).message}</p>}

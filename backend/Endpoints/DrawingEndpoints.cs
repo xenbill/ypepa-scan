@@ -84,7 +84,7 @@ public static class DrawingEndpoints
 
         var meta = new ImportMeta(S("kodikosErg"), S("arithmosSxed"), S("titlosErg"), S("titlosSxed"),
             S("perigrafhSxed"), S("perigrafhErg"), D("hmer"), L("eidosId"), L("kathgId"), L("ypokatId"), L("xorosId"),
-            L("hstrId"), user.Identity?.Name);
+            L("hstrId"), user.Identity?.Name); // USER_INS = logged-in user, never client-supplied
 
         await using var stream = file.OpenReadStream();
         var id = await store.ImportAsync(meta, stream, file.Length, ct);

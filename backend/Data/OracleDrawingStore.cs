@@ -221,7 +221,7 @@ public sealed class OracleDrawingStore : IDrawingStore
                 xoros = meta.XorosId,
                 kathg = meta.KathgId,
                 hstr = meta.HstrId,
-                userIns = meta.UserIns ?? Environment.UserName,
+                userIns = meta.UserIns, // logged-in user (JWT name), set by the import endpoint
             }, tx);
 
         // Stream the upload into the BLOB without holding it all in memory.
