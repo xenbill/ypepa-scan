@@ -7,9 +7,6 @@
     <Version>1.0.0</Version>
   </PropertyGroup>
 
-  <!-- Same pattern as MeletiManager.Api: publish rebuilds the React UI and
-       mirrors it into the publish output, so `dotnet publish` alone produces
-       a complete deployable (backend + fresh frontend). -->
   <Target Name="PostPublishScript" AfterTargets="Publish">
     <Exec Command="cd ..\..\frontend &amp;&amp; npm run build" />
     <Exec Command="robocopy $(ProjectDir)wwwroot $(PublishDir)wwwroot /MIR /LOG:$(PublishDir)robocopy.log" IgnoreExitCode="true" />
