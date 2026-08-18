@@ -39,6 +39,8 @@ export interface DrawingRow {
   mazikiKataxwrisi: number | null
   dateIns: string | null
   userIns: string | null
+  /** file length in bytes; only present on GET /drawings/{id} */
+  sizeBytes?: number | null
 }
 
 export interface SearchResult {

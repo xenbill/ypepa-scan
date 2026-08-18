@@ -152,7 +152,10 @@ public sealed class OracleDrawingStore : IDrawingStore
     {
         await using var con = Open();
         return await con.QueryFirstOrDefaultAsync<DrawingRow>(
-            $"select {Cols} {BaseSelect} where s.SXEDIO_ID = :id and nvl(s.DELETED, 0) = 0", new { id });
+            $@"select {Cols},
+                      (select dbms_lob.getlength(b.SXEDIO) from {_owner}.C16PE_SXEDIO_BLOB b
+                        where b.SXEDIO_ID = s.SXEDIO_ID and rownum = 1) as SizeBytes
+               {BaseSelect} where s.SXEDIO_ID = :id and nvl(s.DELETED, 0) = 0", new { id });
     }
 
     public async Task<(Stream Stream, long Length)?> OpenFileAsync(long id, CancellationToken ct = default)

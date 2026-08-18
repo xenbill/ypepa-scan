@@ -179,3 +179,9 @@ export function formatDate(s: string | null | undefined): string {
   const d = new Date(s)
   return isNaN(d.getTime()) ? '' : d.toLocaleDateString('el-GR')
 }
+
+/** Bytes → "12,3 MB" (el-GR), '' when unknown. */
+export function formatMb(bytes: number | null | undefined): string {
+  if (bytes == null) return ''
+  return (bytes / 1048576).toLocaleString('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' MB'
+}

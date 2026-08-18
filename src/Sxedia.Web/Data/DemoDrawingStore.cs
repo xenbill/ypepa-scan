@@ -149,7 +149,9 @@ public sealed class DemoDrawingStore : IDrawingStore
     {
         var db = Load();
         var d = db.Drawings.FirstOrDefault(x => x.SxedioId == id && !x.Deleted);
-        return Task.FromResult(d is null ? null : ToRow(db, d));
+        if (d is null) return Task.FromResult<DrawingRow?>(null);
+        long? size = File.Exists(FilePath(id)) ? new FileInfo(FilePath(id)).Length : null;
+        return Task.FromResult<DrawingRow?>(ToRow(db, d) with { SizeBytes = size });
     }
 
     public Task<(Stream Stream, long Length)?> OpenFileAsync(long id, CancellationToken ct = default)

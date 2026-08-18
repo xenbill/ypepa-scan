@@ -39,6 +39,8 @@ public record DrawingRow
     public int? MazikiKataxwrisi { get; init; }
     public DateTime? DateIns { get; init; }
     public string? UserIns { get; init; }
+    /// <summary>Stored file length. Only populated by GetAsync (single row); null in search lists.</summary>
+    public long? SizeBytes { get; init; }
 }
 
 public record SearchResult(IReadOnlyList<DrawingRow> Items, int Total, int Page, int PageSize);

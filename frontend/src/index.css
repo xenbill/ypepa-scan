@@ -57,6 +57,7 @@ small { color: var(--ink-soft); }
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 24px;
   border-bottom: 2px solid var(--accent-dark);
+  position: sticky; top: 0; z-index: 5; /* below viewer (10) and modals (20) */
 }
 .brand { display: flex; align-items: center; gap: 14px; }
 .brand-mark {
@@ -200,6 +201,8 @@ main.page { padding: 20px 24px 48px; max-width: 1680px; margin: 0 auto; }
 .lookup-card td:first-child { width: 100%; }
 .lookup-actions { white-space: nowrap; text-align: right; }
 .lookup-actions button { padding: 3px 10px; font-size: 12.5px; margin-left: 4px; }
+.lookup-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; color: var(--ink-soft); }
+.lookup-filter select { min-width: 260px; }
 .lookup-add { display: flex; gap: 8px; margin-top: 12px; }
 .lookup-add input { flex: 1; }
 

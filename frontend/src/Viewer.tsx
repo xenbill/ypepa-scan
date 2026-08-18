@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import OpenSeadragon from 'openseadragon'
-import { deleteDrawing, downloadFile, formatDate, getDrawing, getLookups, getViewInfo, updateDrawing } from './api'
+import { deleteDrawing, downloadFile, formatDate, formatMb, getDrawing, getLookups, getViewInfo, updateDrawing } from './api'
 import ComboSelect from './ComboSelect'
 import ConfirmModal from './ConfirmModal'
 import type { DrawingMeta, DrawingRow, LookupData } from './types'
@@ -116,6 +116,7 @@ export default function Viewer({ id, onClose }: ViewerProps) {
           ['Ημερομηνία', formatDate(drawing.hmer)],
           ['Εισαγωγή στη ΒΔ', formatDate(drawing.dateIns)],
           ['Χρήστης', drawing.userIns],
+          ['Μέγεθος αρχείου', formatMb(drawing.sizeBytes)],
           ['Μαζική καταχώρηση', drawing.mazikiKataxwrisi ? 'Ναι' : 'Όχι'],
         ]],
       ]

@@ -74,12 +74,15 @@ function LookupCard({ title, type, items, parents }: {
   const [newParent, setNewParent] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [toDelete, setToDelete] = useState<Lookup | null>(null)
+  // Parent filter for long child lists (168 υποκατηγορίες): '' = all.
+  const [parentFilter, setParentFilter] = useState('')
+  const visible = parents && parentFilter ? items.filter((l) => l.parentId === Number(parentFilter)) : items
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['lookups'] })
   const fail = (e: Error) => setError(e.message)
 
   const addMutation = useMutation({
-    mutationFn: () => addLookup(type, newName.trim(), newParent ? Number(newParent) : null),
+    mutationFn: () => addLookup(type, newName.trim(), (newParent || parentFilter) ? Number(newParent || parentFilter) : null),
     onSuccess: () => { setNewName(''); setNewParent(''); setError(null); refresh() },
     onError: fail,
   })
@@ -105,12 +108,26 @@ function LookupCard({ title, type, items, parents }: {
   return (
     <section className="card lookup-card">
       <h3>{title}</h3>
+      {parents && (
+        <div className="lookup-filter">
+          <label>Κατηγορία</label>
+          <select value={parentFilter} onChange={(e) => setParentFilter(e.target.value)}>
+            <option value="">Όλες ({items.length})</option>
+            {parents.map((p) => (
+              <option key={p.id} value={p.id}>{p.name} ({items.filter((l) => l.parentId === p.id).length})</option>
+            ))}
+          </select>
+        </div>
+      )}
       {items.length === 0 && (
         <p className="lookup-empty">Καμία τιμή στη λίστα — προσθέστε την πρώτη παρακάτω.</p>
       )}
+      {items.length > 0 && visible.length === 0 && (
+        <p className="lookup-empty">Καμία υποκατηγορία σε αυτή την κατηγορία.</p>
+      )}
       <table>
         <tbody>
-          {items.map((l) => (
+          {visible.map((l) => (
             <tr key={l.id}>
               {editingId === l.id ? (
                 <>
@@ -150,7 +167,7 @@ function LookupCard({ title, type, items, parents }: {
         <input placeholder="Νέα τιμή…" value={newName} onChange={(e) => setNewName(e.target.value)}
                onKeyDown={(e) => e.key === 'Enter' && newName.trim() && addMutation.mutate()} />
         {parents && (
-          <select value={newParent} onChange={(e) => setNewParent(e.target.value)}>
+          <select value={newParent || parentFilter} onChange={(e) => setNewParent(e.target.value)}>
             <option value="">— κατηγορία —</option>
             {parents.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
