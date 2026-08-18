@@ -19,11 +19,26 @@ export default function LoginPage() {
 
   return (
     <div className="login-wrap">
+      {/* faint drafting linework behind the sheet — static inline SVG, nothing fetched */}
+      <svg className="login-art" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice"
+           fill="none" aria-hidden="true">
+        <g stroke="#ffffff" strokeOpacity="0.09" strokeWidth="1.5">
+          <circle cx="290" cy="420" r="185" />
+          <circle cx="290" cy="420" r="122" />
+          <path d="M290 195v450M65 420h450" />
+          <path d="M290 420l152-104" />
+          <path d="M1180 180h290v390h-290z" />
+          <path d="M1180 365h145M1325 365v205M1325 180v105" />
+          <path d="M1325 285a80 80 0 0 1 80 80" />
+          <path d="M1180 148h290M1180 140v16M1470 140v16" />
+          <path d="M1175 152l10-9M1465 152l10-9" />
+          <path d="M175 785h250M175 785l205-125" />
+          <path d="M255 785a80 80 0 0 0-13-42" />
+        </g>
+        <circle cx="290" cy="420" r="4" fill="#ffffff" fillOpacity="0.12" />
+      </svg>
       <div className="login-box">
-        <div className="login-brand">
-          <span className="brand-mark">ΣΥ</span>
-          <h1>Σχέδια ΥΠΕΠΑ</h1>
-        </div>
+        <h1>Σχέδια ΥΠΕΠΑ</h1>
         <p className="login-note">Αρχείο τεχνικών σχεδίων — συνδεθείτε για να συνεχίσετε.</p>
         <form onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
           <label>Όνομα χρήστη

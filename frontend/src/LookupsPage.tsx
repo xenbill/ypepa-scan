@@ -27,30 +27,36 @@ export default function LookupsPage() {
   const current = LISTS.find((l) => l.type === selected)!
 
   return (
-    <>
+    <div className="lookup-single">
       <h2 className="page-title">Λίστες επιλογών</h2>
       <p className="page-note">
-        Προσοχή: η μετονομασία μιας τιμής εμφανίζεται σε όλα τα σχέδια που τη
-        χρησιμοποιούν — παλαιά και νέα. Διαγραφή επιτρέπεται μόνο αν η τιμή δεν
-        χρησιμοποιείται. Οι Μονάδες δεν επεξεργάζονται εδώ (προέρχονται από τη
-        δομή μονάδων).
+        Οι λίστες τροφοδοτούν τα πεδία επιλογής στην αναζήτηση και την καταχώριση σχεδίων.
       </p>
-      <label className="field lookup-picker">
-        <span>Λίστα</span>
-        <select value={selected} onChange={(e) => setSelected(e.target.value as LookupType)}>
-          {LISTS.map((l) => <option key={l.type} value={l.type}>{l.title}</option>)}
-        </select>
-      </label>
-      <div className="lookup-single">
-        <LookupCard
-          key={selected}
-          title={current.title}
-          type={selected}
-          items={items[selected]}
-          parents={selected === 'ypokatigoria' ? lk.kathgoriaErg : undefined}
-        />
+      <div className="tabs">
+        {LISTS.map((l) => (
+          <button
+            key={l.type}
+            className={l.type === selected ? 'tab active' : 'tab'}
+            onClick={() => setSelected(l.type)}
+          >
+            {l.title} <span className="tab-count">{items[l.type].length}</span>
+          </button>
+        ))}
       </div>
-    </>
+      <LookupCard
+        key={selected}
+        title={current.title}
+        type={selected}
+        items={items[selected]}
+        parents={selected === 'ypokatigoria' ? lk.kathgoriaErg : undefined}
+      />
+      <div className="note-box">
+        <span className="note-label">Σημειωση</span>
+        Η μετονομασία μιας τιμής εμφανίζεται σε όλα τα σχέδια που τη χρησιμοποιούν —
+        παλαιά και νέα. Διαγραφή επιτρέπεται μόνο αν η τιμή δεν χρησιμοποιείται.
+        Οι Μονάδες προέρχονται από τη δομή μονάδων και δεν επεξεργάζονται εδώ.
+      </div>
+    </div>
   )
 }
 
@@ -99,6 +105,9 @@ function LookupCard({ title, type, items, parents }: {
   return (
     <section className="card lookup-card">
       <h3>{title}</h3>
+      {items.length === 0 && (
+        <p className="lookup-empty">Καμία τιμή στη λίστα — προσθέστε την πρώτη παρακάτω.</p>
+      )}
       <table>
         <tbody>
           {items.map((l) => (

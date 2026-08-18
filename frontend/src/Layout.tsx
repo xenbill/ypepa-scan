@@ -20,7 +20,10 @@ export default function Layout() {
       <header className="appbar">
         <div className="brand">
           <span className="brand-mark">ΣΥ</span>
-          <h1>Σχέδια ΥΠΕΠΑ</h1>
+          <div>
+            <h1>Σχέδια ΥΠΕΠΑ</h1>
+            <span className="brand-sub">ΑΡΧΕΙΟ ΤΕΧΝΙΚΩΝ ΣΧΕΔΙΩΝ</span>
+          </div>
         </div>
         <nav className="nav">
           <NavLink to="/" end>Αρχική</NavLink>

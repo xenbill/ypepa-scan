@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
-  downloadFile, formatDate, getLookups, searchDrawings,
+  formatDate, getLookups, searchDrawings,
   UnauthorizedError, type Sort,
 } from './api'
-import { emptyFilters, type Filters, type Lookup } from './types'
+import { emptyFilters, type Filters } from './types'
+import ComboSelect from './ComboSelect'
 import ImportForm from './ImportForm'
 
 const PAGE_SIZE = 20
@@ -60,8 +61,8 @@ export default function App() {
       : s.dir === 'asc' ? { key, dir: 'desc' } : null)
   }
 
-  const setFilter = (key: keyof Filters) => (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const next = { ...filters, [key]: e.target.value }
+  const setFilter = (key: keyof Filters) => (id: string) => {
+    const next = { ...filters, [key]: id }
     if (key === 'kathg') next.ypokat = ''
     apply(next)
   }
@@ -71,13 +72,12 @@ export default function App() {
   )
   const pages = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1
 
-  const options = (items: Lookup[], all: string) => [
-    <option key="" value="">{all}</option>,
-    ...items.map((l) => <option key={l.id} value={l.id}>{l.name}</option>),
-  ]
-
   return (
     <>
+      <div className="list-head">
+        <h2 className="page-title">Σχέδια</h2>
+        <button className="primary" onClick={() => setShowImport(true)}>+ Καταχώριση σχεδίου</button>
+      </div>
       <section className="card filters">
         <div className="filters-title">Αναζήτηση</div>
         <div className="filter-grid">
@@ -103,29 +103,27 @@ export default function App() {
           <div className="filter-buttons">
             <button className="primary" onClick={() => apply({ ...filters, q: draftQ })}>Αναζήτηση</button>
             <button onClick={() => { setDraftQ(''); apply(emptyFilters) }}>Καθαρισμός</button>
-            <span className="spacer" />
-            <button className="primary" onClick={() => setShowImport(true)}>+ Καταχώριση</button>
           </div>
-          <label className="field">
+          <div className="field">
             <span>Κατηγορία έργου</span>
-            <select value={filters.kathg} onChange={setFilter('kathg')}>{options(lookups?.kathgoriaErg ?? [], 'Όλες')}</select>
-          </label>
-          <label className="field">
+            <ComboSelect options={lookups?.kathgoriaErg ?? []} value={filters.kathg} allLabel="Όλες" onChange={setFilter('kathg')} />
+          </div>
+          <div className="field">
             <span>Υποκατηγορία</span>
-            <select value={filters.ypokat} onChange={setFilter('ypokat')}>{options(ypokatOptions, 'Όλες')}</select>
-          </label>
-          <label className="field">
+            <ComboSelect options={ypokatOptions} value={filters.ypokat} allLabel="Όλες" onChange={setFilter('ypokat')} />
+          </div>
+          <div className="field">
             <span>Μονάδα</span>
-            <select value={filters.hstr} onChange={setFilter('hstr')}>{options(lookups?.monada ?? [], 'Όλες')}</select>
-          </label>
-          <label className="field">
+            <ComboSelect options={lookups?.monada ?? []} value={filters.hstr} allLabel="Όλες" onChange={setFilter('hstr')} />
+          </div>
+          <div className="field">
             <span>Είδος σχεδίου</span>
-            <select value={filters.eidos} onChange={setFilter('eidos')}>{options(lookups?.eidosSxed ?? [], 'Όλα')}</select>
-          </label>
-          <label className="field">
+            <ComboSelect options={lookups?.eidosSxed ?? []} value={filters.eidos} allLabel="Όλα" onChange={setFilter('eidos')} />
+          </div>
+          <div className="field">
             <span>Τοποθέτηση</span>
-            <select value={filters.xoros} onChange={setFilter('xoros')}>{options(lookups?.xorosApoth ?? [], 'Όλοι')}</select>
-          </label>
+            <ComboSelect options={lookups?.xorosApoth ?? []} value={filters.xoros} allLabel="Όλοι" onChange={setFilter('xoros')} />
+          </div>
         </div>
       </section>
 
@@ -150,9 +148,9 @@ export default function App() {
             <tbody>
               {(result?.items ?? []).map((d) => (
                 <tr key={d.sxedioId}>
-                  <td>{d.kodikosErg}</td>
+                  <td className="mono">{d.kodikosErg}</td>
                   <td>
-                    <a href={`/sxedio/${d.sxedioId}`}
+                    <a className="mono" href={`/sxedio/${d.sxedioId}`}
                        onClick={(e) => { e.preventDefault(); navigate(`/sxedio/${d.sxedioId}`) }}>
                       {d.arithmosSxed || '—'}
                     </a>
@@ -166,10 +164,9 @@ export default function App() {
                   <td>{d.xorosApoth}</td>
                   <td className="trunc" title={d.perigrafhSxed ?? ''}>{d.perigrafhSxed}</td>
                   <td className="trunc" title={d.perigrafhErg ?? ''}>{d.perigrafhErg}</td>
-                  <td>{formatDate(d.dateIns)}</td>
+                  <td className="mono">{formatDate(d.dateIns)}</td>
                   <td>
-                    <button onClick={() => navigate(`/sxedio/${d.sxedioId}`)}>Προβολή</button>{' '}
-                    <button onClick={() => downloadFile(d.sxedioId)}>Λήψη</button>
+                    <button onClick={() => navigate(`/sxedio/${d.sxedioId}`)}>Προβολή</button>
                   </td>
                 </tr>
               ))}
@@ -177,7 +174,17 @@ export default function App() {
           </table>
         </div>
         {result?.items.length === 0 && (
-          <div className="empty-note">Δεν βρέθηκαν σχέδια με αυτά τα κριτήρια.</div>
+          <div className="empty-note">
+            <svg width="72" height="56" viewBox="0 0 72 56" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="70" height="54" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <rect x="7.5" y="7.5" width="57" height="41" stroke="currentColor" opacity="0.45" />
+              <rect x="42.5" y="38.5" width="22" height="10" stroke="currentColor" opacity="0.7" />
+              <path d="M15 18h24M15 25h30M15 32h18" stroke="currentColor" opacity="0.45" />
+            </svg>
+            <p><strong>Δεν βρέθηκαν σχέδια</strong></p>
+            <p>Δοκιμάστε λιγότερα φίλτρα ή διαφορετικό κείμενο αναζήτησης.</p>
+            <button onClick={() => { setDraftQ(''); apply(emptyFilters) }}>Καθαρισμός φίλτρων</button>
+          </div>
         )}
       </section>
 

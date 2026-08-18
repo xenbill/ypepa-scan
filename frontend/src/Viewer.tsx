@@ -114,10 +114,14 @@ export default function Viewer({ id, onClose }: ViewerProps) {
         <span className="viewer-buttons">
           {info?.type !== 'pdf' && (
             <>
-              <button onClick={() => zoom(1 / 1.5)}>−</button>
-              <button onClick={() => zoom(1.5)}>+</button>
-              <button onClick={() => rotate(-90)} title="Περιστροφή αριστερά">⟲ 90°</button>
-              <button onClick={() => rotate(90)} title="Περιστροφή δεξιά">⟳ 90°</button>
+              <span className="btn-group">
+                <button onClick={() => zoom(1 / 1.5)} title="Σμίκρυνση">−</button>
+                <button onClick={() => zoom(1.5)} title="Μεγέθυνση">+</button>
+              </span>
+              <span className="btn-group">
+                <button onClick={() => rotate(-90)} title="Περιστροφή αριστερά">⟲ 90°</button>
+                <button onClick={() => rotate(90)} title="Περιστροφή δεξιά">⟳ 90°</button>
+              </span>
               <button onClick={fit}>Προσαρμογή</button>
             </>
           )}
