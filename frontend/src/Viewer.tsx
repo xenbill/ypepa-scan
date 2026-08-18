@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import OpenSeadragon from 'openseadragon'
 import { deleteDrawing, downloadFile, formatDate, getDrawing, getLookups, getViewInfo, updateDrawing } from './api'
+import ComboSelect from './ComboSelect'
 import ConfirmModal from './ConfirmModal'
-import type { DrawingMeta, DrawingRow, Lookup, LookupData } from './types'
+import type { DrawingMeta, DrawingRow, LookupData } from './types'
 
 interface ViewerProps {
   id: number
@@ -221,18 +222,15 @@ function MetaEditForm({ drawing, lookups, onDone }: {
   })
 
   const num = (key: 'eidosId' | 'kathgId' | 'ypokatId' | 'xorosId' | 'hstrId') => ({
-    value: form[key] ?? '',
-    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const next = { ...form, [key]: e.target.value ? Number(e.target.value) : null }
+    value: form[key] != null ? String(form[key]) : '',
+    allLabel: '—',
+    onChange: (id: string) => {
+      const next = { ...form, [key]: id ? Number(id) : null }
       if (key === 'kathgId') next.ypokatId = null
       setForm(next)
     },
   })
 
-  const options = (items: Lookup[]) => [
-    <option key="" value="">—</option>,
-    ...items.map((l) => <option key={l.id} value={l.id}>{l.name}</option>),
-  ]
   const ypokat = lookups.ypokatErg.filter((y) => !form.kathgId || y.parentId === form.kathgId)
 
   return (
@@ -243,22 +241,22 @@ function MetaEditForm({ drawing, lookups, onDone }: {
       <div className="meta-section">
         <h4>Σχέδιο</h4>
         <label>Αριθμός σχεδίου<input required maxLength={50} {...text('arithmosSxed')} /></label>
-        <label>Είδος σχεδίου<select {...num('eidosId')}>{options(lookups.eidosSxed)}</select></label>
+        <label>Είδος σχεδίου<ComboSelect options={lookups.eidosSxed} {...num('eidosId')} /></label>
         <label>Τίτλος σχεδίου<input maxLength={500} {...text('titlosSxed')} /></label>
         <label>Περιγραφή σχεδίου<textarea rows={2} maxLength={2000} {...text('perigrafhSxed')} /></label>
       </div>
       <div className="meta-section">
         <h4>Έργο</h4>
         <label>Κωδικός έργου<input maxLength={50} {...text('kodikosErg')} /></label>
-        <label>Κατηγορία έργου<select {...num('kathgId')}>{options(lookups.kathgoriaErg)}</select></label>
-        <label>Υποκατηγορία έργου<select {...num('ypokatId')}>{options(ypokat)}</select></label>
+        <label>Κατηγορία έργου<ComboSelect options={lookups.kathgoriaErg} {...num('kathgId')} /></label>
+        <label>Υποκατηγορία έργου<ComboSelect options={ypokat} {...num('ypokatId')} /></label>
         <label>Περιγραφή έργου<textarea rows={2} maxLength={2000} {...text('perigrafhErg')} /></label>
-        <label>Μονάδα<select {...num('hstrId')}>{options(lookups.monada)}</select></label>
+        <label>Μονάδα<ComboSelect options={lookups.monada} {...num('hstrId')} /></label>
         <label>Υπομονάδα<input maxLength={500} {...text('titlosErg')} /></label>
       </div>
       <div className="meta-section">
         <h4>Πρόσθετες πληροφορίες</h4>
-        <label>Τοποθέτηση<select {...num('xorosId')}>{options(lookups.xorosApoth)}</select></label>
+        <label>Τοποθέτηση<ComboSelect options={lookups.xorosApoth} {...num('xorosId')} /></label>
         <label>Ημερομηνία
           <input type="date" value={form.hmer ?? ''}
             onChange={(e) => setForm({ ...form, hmer: e.target.value || null })} />

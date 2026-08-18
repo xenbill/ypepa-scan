@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { importDrawing } from './api'
-import type { Lookup, LookupData } from './types'
+import ComboSelect from './ComboSelect'
+import type { LookupData } from './types'
 
 interface ImportFormProps {
   lookups: LookupData
@@ -9,7 +10,13 @@ interface ImportFormProps {
 }
 
 export default function ImportForm({ lookups, onClose }: ImportFormProps) {
+  // Lookup pickers are ComboSelect (not native form controls), so their values
+  // reach the FormData through paired hidden inputs.
+  const [eidosId, setEidosId] = useState('')
   const [kathgId, setKathgId] = useState('')
+  const [ypokatId, setYpokatId] = useState('')
+  const [hstrId, setHstrId] = useState('')
+  const [xorosId, setXorosId] = useState('')
   const [lastId, setLastId] = useState<number | null>(null)
   const queryClient = useQueryClient()
 
@@ -22,23 +29,22 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
     },
   })
 
+  function resetLookups() {
+    setEidosId(''); setKathgId(''); setYpokatId(''); setHstrId(''); setXorosId('')
+  }
+
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
     mutation.mutate(new FormData(form), {
       onSuccess: () => {
         form.reset()
-        setKathgId('')
+        resetLookups()
       },
     })
   }
 
   const ypokat = lookups.ypokatErg.filter((y) => !kathgId || y.parentId === Number(kathgId))
-
-  const options = (items: Lookup[]) => [
-    <option key="" value="">—</option>,
-    ...items.map((l) => <option key={l.id} value={l.id}>{l.name}</option>),
-  ]
 
   return (
     <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -52,7 +58,10 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
                 <th>Αριθμός σχεδίου *</th>
                 <td><input name="arithmosSxed" maxLength={50} required /></td>
                 <th>Είδος σχεδίου</th>
-                <td><select name="eidosId">{options(lookups.eidosSxed)}</select></td>
+                <td>
+                  <input type="hidden" name="eidosId" value={eidosId} />
+                  <ComboSelect options={lookups.eidosSxed} value={eidosId} allLabel="—" onChange={setEidosId} />
+                </td>
               </tr>
               <tr>
                 <th>Τίτλος σχεδίου</th>
@@ -69,20 +78,26 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
                 <td><input name="kodikosErg" maxLength={50} /></td>
                 <th>Κατηγορία έργου</th>
                 <td>
-                  <select name="kathgId" value={kathgId} onChange={(e) => setKathgId(e.target.value)}>
-                    {options(lookups.kathgoriaErg)}
-                  </select>
+                  <input type="hidden" name="kathgId" value={kathgId} />
+                  <ComboSelect options={lookups.kathgoriaErg} value={kathgId} allLabel="—"
+                               onChange={(id) => { setKathgId(id); setYpokatId('') }} />
                 </td>
               </tr>
               <tr>
                 <th>Υποκατηγορία έργου</th>
-                <td><select name="ypokatId">{options(ypokat)}</select></td>
+                <td>
+                  <input type="hidden" name="ypokatId" value={ypokatId} />
+                  <ComboSelect options={ypokat} value={ypokatId} allLabel="—" onChange={setYpokatId} />
+                </td>
                 <th>Περιγραφή έργου</th>
-                <td><input name="perigrafhErg" maxLength={2000} /></td>
+                <td><textarea name="perigrafhErg" maxLength={2000} rows={2} /></td>
               </tr>
               <tr>
                 <th>Μονάδα</th>
-                <td><select name="hstrId">{options(lookups.monada)}</select></td>
+                <td>
+                  <input type="hidden" name="hstrId" value={hstrId} />
+                  <ComboSelect options={lookups.monada} value={hstrId} allLabel="—" onChange={setHstrId} />
+                </td>
                 <th>Υπομονάδα</th>
                 <td><input name="titlosErg" maxLength={500} /></td>
               </tr>
@@ -90,7 +105,10 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
               <tr><th className="section-row" colSpan={4}>Πρόσθετες πληροφορίες</th></tr>
               <tr>
                 <th>Τοποθέτηση</th>
-                <td><select name="xorosId">{options(lookups.xorosApoth)}</select></td>
+                <td>
+                  <input type="hidden" name="xorosId" value={xorosId} />
+                  <ComboSelect options={lookups.xorosApoth} value={xorosId} allLabel="—" onChange={setXorosId} />
+                </td>
                 <th>Ημερομηνία</th>
                 <td><input name="hmer" type="date" /></td>
               </tr>
