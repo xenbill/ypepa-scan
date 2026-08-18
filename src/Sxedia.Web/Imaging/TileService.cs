@@ -56,6 +56,10 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
                 _ => PrepareDzi(id, originalPath),
             };
 
+            // The blob copy was only needed as vips input; keeping it would roughly
+            // double the cache footprint. (PreparePdf already moved it away.)
+            if (File.Exists(originalPath)) File.Delete(originalPath);
+
             // Atomic publish: readers must never see a half-written meta.json.
             var tmp = MetaPath(id) + ".tmp";
             await File.WriteAllTextAsync(tmp, JsonSerializer.Serialize(info), ct);
@@ -109,6 +113,12 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
                 if (Path.GetFileName(e.Dir) == keepId.ToString()) continue;
                 try
                 {
+                    // Unpublish first: if the recursive delete fails half-way (a tile
+                    // being served is locked on Windows), the entry must not look
+                    // "ready" with tiles missing. No meta.json => treated as a miss
+                    // and regenerated; leftovers are swept as orphans later.
+                    var meta = Path.Combine(e.Dir, "meta.json");
+                    if (File.Exists(meta)) File.Delete(meta);
                     Directory.Delete(e.Dir, recursive: true);
                     total -= e.Size;
                     log.LogInformation("Tile cache: evicted drawing {Dir} ({Mb:0.0} MB, last used {LastUse:u})",
@@ -161,7 +171,7 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
     private ViewInfo PreparePdf(long id, string originalPath)
     {
         var pdfPath = Path.Combine(Dir(id), "original.pdf");
-        File.Copy(originalPath, pdfPath, overwrite: true);
+        File.Move(originalPath, pdfPath, overwrite: true);
         log.LogInformation("Drawing {Id}: PDF, served natively", id);
         return new ViewInfo("pdf", $"/tiles/{id}/original.pdf", "", null, null);
     }

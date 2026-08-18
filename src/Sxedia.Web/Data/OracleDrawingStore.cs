@@ -158,7 +158,9 @@ public sealed class OracleDrawingStore : IDrawingStore
         {
             await con.OpenAsync(ct);
             await using var cmd = con.CreateCommand();
-            cmd.CommandText = $"select SXEDIO from {_owner}.C16PE_SXEDIO_BLOB where SXEDIO_ID = :id and nvl(DELETED, 0) = 0";
+            cmd.CommandText = $@"select b.SXEDIO from {_owner}.C16PE_SXEDIO_BLOB b
+                                   join {_owner}.C16PE_SXEDIO s on s.SXEDIO_ID = b.SXEDIO_ID
+                                  where b.SXEDIO_ID = :id and nvl(s.DELETED, 0) = 0";
             cmd.Parameters.Add(new OracleParameter("id", id));
             var reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess, ct);
             if (!await reader.ReadAsync(ct) || await ((OracleDataReader)reader).IsDBNullAsync(0, ct))
@@ -272,14 +274,11 @@ public sealed class OracleDrawingStore : IDrawingStore
 
     public async Task<bool> SoftDeleteAsync(long id, CancellationToken ct = default)
     {
+        // Only the header row is flagged; the blob row is left untouched so the
+        // scan itself is never marked and can be restored by clearing one flag.
         await using var con = Open();
-        await con.OpenAsync(ct);
-        await using var tx = await con.BeginTransactionAsync(ct);
         var rows = await con.ExecuteAsync(
-            $"update {_owner}.C16PE_SXEDIO set DELETED = 1 where SXEDIO_ID = :id", new { id }, tx);
-        await con.ExecuteAsync(
-            $"update {_owner}.C16PE_SXEDIO_BLOB set DELETED = 1 where SXEDIO_ID = :id", new { id }, tx);
-        await tx.CommitAsync(ct);
+            $"update {_owner}.C16PE_SXEDIO set DELETED = 1 where SXEDIO_ID = :id and nvl(DELETED, 0) = 0", new { id });
         return rows > 0;
     }
 

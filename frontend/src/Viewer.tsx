@@ -29,7 +29,8 @@ export default function Viewer({ id, onClose }: ViewerProps) {
 
   const drawingQuery = useQuery({ queryKey: ['drawing', id], queryFn: () => getDrawing(id) })
   const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: getLookups, staleTime: Infinity })
-  // The server caches pyramids on disk, so this never goes stale.
+  // The server caches pyramids on disk; only refetched if tiles start failing
+  // (the pyramid was evicted while this viewer was open) — see below.
   const viewQuery = useQuery({
     queryKey: ['view', id],
     queryFn: () => getViewInfo(id),
@@ -38,6 +39,8 @@ export default function Viewer({ id, onClose }: ViewerProps) {
   })
   const drawing = drawingQuery.data
   const info = viewQuery.data
+  // A regenerated pyramid has the same URLs, so key the OSD re-init on fetch time.
+  const infoVersion = viewQuery.dataUpdatedAt
 
   useEffect(() => {
     if (!info || info.type === 'pdf' || !osdRef.current) return
@@ -51,11 +54,23 @@ export default function Viewer({ id, onClose }: ViewerProps) {
       visibilityRatio: 1,
     })
     viewerRef.current = viewer
+    // Self-heal: if the pyramid was evicted from the server cache while we were
+    // viewing it, tiles start 404-ing. Ask the server to regenerate it (once) and
+    // re-render with the fresh info instead of leaving grey squares until reload.
+    let healed = false
+    const heal = () => {
+      if (healed) return
+      healed = true
+      queryClient.invalidateQueries({ queryKey: ['view', id] })
+    }
+    viewer.addHandler('tile-load-failed', heal)
+    viewer.addHandler('open-failed', heal)
     return () => {
       viewer.destroy()
       viewerRef.current = null
     }
-  }, [info])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info, infoVersion, id, queryClient])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !editing) onClose() }
