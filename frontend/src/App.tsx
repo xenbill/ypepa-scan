@@ -121,7 +121,7 @@ export default function App() {
             <ComboSelect options={lookups?.eidosSxed ?? []} value={filters.eidos} allLabel="Όλα" onChange={setFilter('eidos')} />
           </div>
           <div className="field">
-            <span>Τοποθέτηση</span>
+            <span>Χώρος αποθήκευσης</span>
             <ComboSelect options={lookups?.xorosApoth ?? []} value={filters.xoros} allLabel="Όλοι" onChange={setFilter('xoros')} />
           </div>
         </div>

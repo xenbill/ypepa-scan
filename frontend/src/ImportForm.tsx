@@ -104,7 +104,7 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
 
               <tr><th className="section-row" colSpan={4}>Πρόσθετες πληροφορίες</th></tr>
               <tr>
-                <th>Τοποθέτηση</th>
+                <th>Χώρος αποθήκευσης</th>
                 <td>
                   <input type="hidden" name="xorosId" value={xorosId} />
                   <ComboSelect options={lookups.xorosApoth} value={xorosId} allLabel="—" onChange={setXorosId} />

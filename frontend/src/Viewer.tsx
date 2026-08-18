@@ -96,7 +96,7 @@ export default function Viewer({ id, onClose }: ViewerProps) {
           ['Υπομονάδα', drawing.titlosErg],
         ]],
         ['Πρόσθετες πληροφορίες', [
-          ['Τοποθέτηση', drawing.xorosApoth],
+          ['Χώρος αποθήκευσης', drawing.xorosApoth],
           ['Ημερομηνία', formatDate(drawing.hmer)],
           ['Εισαγωγή στη ΒΔ', formatDate(drawing.dateIns)],
           ['Χρήστης', drawing.userIns],
@@ -256,7 +256,7 @@ function MetaEditForm({ drawing, lookups, onDone }: {
       </div>
       <div className="meta-section">
         <h4>Πρόσθετες πληροφορίες</h4>
-        <label>Τοποθέτηση<ComboSelect options={lookups.xorosApoth} {...num('xorosId')} /></label>
+        <label>Χώρος αποθήκευσης<ComboSelect options={lookups.xorosApoth} {...num('xorosId')} /></label>
         <label>Ημερομηνία
           <input type="date" value={form.hmer ?? ''}
             onChange={(e) => setForm({ ...form, hmer: e.target.value || null })} />
