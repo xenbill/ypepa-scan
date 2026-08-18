@@ -47,6 +47,12 @@ export default function LoginPage() {
         <h1>Σχέδια ΥΠΕΠΑ</h1>
         <p className="login-note">Αρχείο τεχνικών σχεδίων — συνδεθείτε για να συνεχίσετε.</p>
         <form onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
+          <label>{misLogin ? 'ΑΜΑ' : 'Όνομα χρήστη'}
+            <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="username" />
+          </label>
+          <label>Κωδικός
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+          </label>
           {misLogin && (
             <label>Κατηγορία προσωπικού
               <select value={category ?? ''} onChange={(e) => setCategory(e.target.value ? Number(e.target.value) : null)} required>
@@ -55,12 +61,6 @@ export default function LoginPage() {
               </select>
             </label>
           )}
-          <label>{misLogin ? 'ΑΜΑ' : 'Όνομα χρήστη'}
-            <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="username" />
-          </label>
-          <label>Κωδικός
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-          </label>
           {misLogin && !mode.isLoading && categories.length === 0 && (
             <p className="status-err">Η υπηρεσία σύνδεσης δεν επέστρεψε κατηγορίες προσωπικού.</p>
           )}
