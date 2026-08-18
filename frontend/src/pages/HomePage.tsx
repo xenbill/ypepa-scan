@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { getStats, type StatItem } from './api'
+import { getStats, type StatItem } from '../api/api'
 
 /** Compact single-hue bar list: sorted desc, proportional bars, scrolls past ~8 rows. */
 function StatList({ title, items }: { title: string; items: StatItem[] }) {

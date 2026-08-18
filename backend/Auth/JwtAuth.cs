@@ -9,16 +9,23 @@ namespace Sxedia.Web.Auth;
 public record LoginRequestDto(string Username, string Password);
 public record ChangePasswordRequestDto(string CurrentPassword, string NewPassword);
 public record UserDto(string Username, string FullName, string Role);
-public record AuthResponseDto(string Token, DateTime ExpiresAt, UserDto User);
+public record AuthResponseDto(DateTime ExpiresAt, UserDto User);
 
 /// <summary>
-/// JWT auth in the MeletiManager style (bearer token, /api/auth endpoints,
-/// token kept by the SPA and sent as an Authorization header).
-/// Credential check is the temporary dev user from Auth:* config — swap
+/// Cookie-carried JWT auth. Login issues a signed JWT and stores it in an
+/// HttpOnly cookie; the JwtBearer handler reads it back from that cookie, so
+/// every same-origin request — fetch calls, &lt;img&gt;, PDF frames, OpenSeadragon
+/// tiles — is authenticated without the SPA ever touching the token.
+/// Unauthenticated requests get a plain 401 (no login-page redirect), which the
+/// SPA handles. CSRF: SameSite=Lax cookie + all mutations are non-GET, so a
+/// cross-site page cannot make the browser send the cookie with a state-changing
+/// request. Credential check is the temporary dev user from Auth:* config — swap
 /// ValidateCredentials for the real user store later; the token plumbing stays.
 /// </summary>
 public static class JwtAuth
 {
+    public const string CookieName = "sxedia_auth";
+
     public static void AddJwtAuthentication(this IServiceCollection services, IConfiguration cfg)
     {
         services.AddAuthentication(options =>
@@ -39,6 +46,16 @@ public static class JwtAuth
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(cfg["Jwt:Key"]!)),
                     ClockSkew = TimeSpan.Zero,
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    // Token lives in the auth cookie (a Bearer header still works, e.g. for scripts).
+                    OnMessageReceived = ctx =>
+                    {
+                        if (string.IsNullOrEmpty(ctx.Token) && ctx.Request.Cookies.TryGetValue(CookieName, out var t))
+                            ctx.Token = t;
+                        return Task.CompletedTask;
+                    },
+                };
             });
         services.AddAuthorization();
     }
@@ -47,14 +64,15 @@ public static class JwtAuth
     {
         var auth = app.MapGroup("/api/auth");
 
-        auth.MapPost("login", (LoginRequestDto dto, IConfiguration cfg, IWebHostEnvironment env) =>
+        auth.MapPost("login", (LoginRequestDto dto, HttpContext http, IConfiguration cfg, IWebHostEnvironment env) =>
         {
             if (!ValidateCredentials(dto.Username, dto.Password, cfg, env))
                 return Results.Unauthorized();
 
             var user = new UserDto(dto.Username, dto.Username, "User");
             var (token, expiresAt) = GenerateAccessToken(user, cfg);
-            return Results.Ok(new AuthResponseDto(token, expiresAt, user));
+            http.Response.Cookies.Append(CookieName, token, CookieOptions(http, expiresAt));
+            return Results.Ok(new AuthResponseDto(expiresAt, user));
         });
 
         auth.MapGet("me", (ClaimsPrincipal principal) =>
@@ -67,8 +85,12 @@ public static class JwtAuth
                 principal.FindFirstValue(ClaimTypes.Role) ?? "User"));
         }).RequireAuthorization();
 
-        // Stateless tokens for now — logout is client-side (drop the token).
-        auth.MapPost("logout", () => Results.Ok(new { message = "Logged out" })).RequireAuthorization();
+        // Stateless tokens: logout = drop the cookie.
+        auth.MapPost("logout", (HttpContext http) =>
+        {
+            http.Response.Cookies.Delete(CookieName, CookieOptions(http, null));
+            return Results.Ok(new { message = "Logged out" });
+        });
 
         auth.MapPost("change-password", (ChangePasswordRequestDto dto, ClaimsPrincipal principal,
             IConfiguration cfg, IWebHostEnvironment env) =>
@@ -84,6 +106,20 @@ public static class JwtAuth
             return Results.Ok(new { message = "Ο κωδικός άλλαξε." });
         }).RequireAuthorization();
     }
+
+    // HttpOnly: JS never sees the token. SameSite=Lax: sent on same-site requests and
+    // top-level navigations (deep links from e-mail work), never on cross-site POSTs.
+    // Secure only when the request itself is HTTPS — the app may be deployed on plain
+    // intranet HTTP, where a Secure cookie would simply never be sent back.
+    private static CookieOptions CookieOptions(HttpContext http, DateTime? expiresAt) => new()
+    {
+        HttpOnly = true,
+        SameSite = SameSiteMode.Lax,
+        Secure = http.Request.IsHttps,
+        Path = "/",
+        Expires = expiresAt,
+        IsEssential = true,
+    };
 
     // Password check: the config value is the initial password; once changed via the
     // change-password page, the SHA-256 hash stored in auth.json takes precedence.
@@ -109,7 +145,7 @@ public static class JwtAuth
 
     private static (string Token, DateTime ExpiresAt) GenerateAccessToken(UserDto user, IConfiguration cfg)
     {
-        var minutes = int.TryParse(cfg["Jwt:ExpiresInMinutes"], out var m) ? m : 720;
+        var minutes = int.TryParse(cfg["Jwt:ExpiresInMinutes"], out var m) ? m : 480;
         var expiresAt = DateTime.Now.AddMinutes(minutes);
 
         var claims = new[]

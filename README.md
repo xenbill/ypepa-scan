@@ -7,10 +7,11 @@ appear immediately — no migration.
 
 ## Structure
 
-- `src/Sxedia.Web` — ASP.NET Core API + serves the built frontend from `wwwroot`
-- `frontend` — React + TypeScript (Vite), TanStack Query for data fetching/caching,
+- `backend` — ASP.NET Core API + serves the built frontend from `wwwroot`
+- `frontend` — React + TypeScript (Vite): `src/api` (fetch helpers + types),
+  `src/pages`, `src/components`, `src/viewer` (OpenSeadragon viewer). TanStack Query for data fetching/caching,
   React Router (`/login`, `/`, `/sxedio/:id` — drawings are deep-linkable).
-  `npm run build` type-checks and outputs into `src/Sxedia.Web/wwwroot`, so the
+  `npm run build` type-checks and outputs into `backend/wwwroot`, so the
   deployable is still the single .NET app. Lightweight modern CSS (no animations),
   ES2015 output for older PCs; React and OpenSeadragon are bundled — no CDN needed.
   For frontend development: `npm run dev` (serves on :5173, proxies `/api` and
@@ -18,15 +19,20 @@ appear immediately — no migration.
 
 ## Login
 
-JWT bearer auth in the meleti-manager style: `POST /api/auth/login` returns
-`{token, expiresAt, user}`; the SPA stores `authToken` in localStorage and sends
-`Authorization: Bearer`. All `/api` data endpoints require it. The credential
-check is **temporary** (`Auth:Username`/`Auth:Password` in appsettings, default
-`dev`/`dev`, 12-hour tokens) — swap `ValidateCredentials` in `Auth/JwtAuth.cs`
-for the real user store (Argon2 users table / refresh tokens like
-meleti-manager) later; the token plumbing stays. The logged-in username is
-recorded as `USER_INS` on imports. Note: `/tiles/*` (generated tiles) is served
-as plain static content without auth in this version.
+Cookie-carried JWT: `POST /api/auth/login` validates the credentials, issues a
+signed JWT and sets it as an **HttpOnly, SameSite=Lax** cookie (`sxedia_auth`,
+8-hour expiry — `Jwt:ExpiresInMinutes`); the response body is `{expiresAt, user}`.
+The SPA never sees the token — the browser sends the cookie automatically on
+every same-origin request, so `/api/*` **and** `/tiles/*` (DZI tiles, thumbs,
+cached PDFs, served by `Endpoints/TileEndpoints.cs`) all require login, and
+`<img>`/PDF frames/OpenSeadragon just work. Unauthenticated requests get 401
+(no redirect); `POST /api/auth/logout` expires the cookie. CSRF is covered by
+SameSite=Lax + all mutations being non-GET; the `Secure` flag is set only when
+the request is HTTPS, so plain intranet HTTP still works. The credential check
+is **temporary** (`Auth:Username`/`Auth:Password` in appsettings, default
+`dev`/`dev`) — swap `ValidateCredentials` in `Auth/JwtAuth.cs` for the real user
+store later; the cookie/token plumbing stays. The logged-in username is
+recorded as `USER_INS` on imports.
 
 ## Logging
 
@@ -44,16 +50,16 @@ Schema owner configurable via `Oracle:CommonOwner`.
 ## Run (demo mode, no Oracle needed)
 
 ```powershell
-cd src\Sxedia.Web
+cd backend
 dotnet run --urls http://localhost:5580
 ```
 
 First start generates four sample 10000×15000 bilevel TIFFs under
-`src/Sxedia.Web/demo-data/` so the viewer can be exercised at realistic sizes.
+`backend/demo-data/` so the viewer can be exercised at realistic sizes.
 
 ## Switch to the real archive
 
-In `src/Sxedia.Web/appsettings.json`:
+In `backend/appsettings.json`:
 
 ```jsonc
 "Storage": { "Mode": "Oracle" },
@@ -68,14 +74,14 @@ In `src/Sxedia.Web/appsettings.json`:
 - Browsers cannot render TIFF, and a 150-megapixel scan is far too large to
   serve as one image. On first view of a drawing, libvips (NetVips) builds a
   **Deep Zoom (DZI) tile pyramid** (~1–3 s) into `tile-cache/<id>/`; after that
-  the drawing opens instantly and zooms like a map (OpenSeadragon, vendored in
-  `wwwroot/lib` — no internet access needed at runtime).
+  the drawing opens instantly and zooms like a map (OpenSeadragon, bundled
+  from npm via Vite — no internet access needed at runtime).
 - PDF blobs are detected by magic bytes and shown with the browser's native
   PDF viewer instead.
-- `tile-cache/` is capped at **500 MB** (`Cache:MaxMegabytes`): past the cap,
+- `tile-cache/` is capped at **1 GB** (`Cache:MaxMegabytes`, default 1024): past the cap,
   the least-recently-viewed drawings are evicted automatically and regenerate
   on next view (~1–3 s). A 10000×15000 scan costs ~6–10 MB of tiles, so the
-  default cap keeps roughly the last 50–80 viewed drawings instant. The folder
+  default cap keeps roughly the last 100–150 viewed drawings instant. The folder
   can also be deleted manually at any time.
 
 ## Importing new drawings

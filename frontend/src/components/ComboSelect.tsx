@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Lookup } from './types'
+import type { Lookup } from '../api/types'
 
 /** πεζά, χωρίς τόνους/διαλυτικά, ς→σ — ώστε «ΥΠΟΔ», «υπόδ» και «υποδ» να ταιριάζουν όλα */
 export function normalizeGreek(s: string): string {

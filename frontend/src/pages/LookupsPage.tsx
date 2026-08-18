@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { addLookup, deleteLookup, getLookups, updateLookup, type LookupType } from './api'
-import type { Lookup } from './types'
-import ConfirmModal from './ConfirmModal'
+import { addLookup, deleteLookup, getLookups, updateLookup, type LookupType } from '../api/api'
+import type { Lookup } from '../api/types'
+import ConfirmModal from '../components/ConfirmModal'
 
 const LISTS: { type: LookupType; title: string }[] = [
   { type: 'eidos', title: 'Είδη σχεδίου' },

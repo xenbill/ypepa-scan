@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     target: 'es2015',
-    outDir: '../src/Sxedia.Web/wwwroot',
+    outDir: '../backend/wwwroot',
     emptyOutDir: true,
   },
   server: {

@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { logout, type UserInfo } from './api'
+import { logout, type UserInfo } from '../api/api'
 
 export default function Layout() {
   const user = useOutletContext<UserInfo>()

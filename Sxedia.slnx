@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/Sxedia.Web.csproj" />
+  </Folder>
+</Solution>

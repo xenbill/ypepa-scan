@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import OpenSeadragon from 'openseadragon'
-import { deleteDrawing, downloadFile, formatDate, formatMb, getDrawing, getLookups, getViewInfo, updateDrawing } from './api'
-import ComboSelect from './ComboSelect'
-import ConfirmModal from './ConfirmModal'
-import type { DrawingMeta, DrawingRow, LookupData } from './types'
+import { deleteDrawing, downloadFile, formatDate, formatMb, getDrawing, getLookups, getViewInfo, updateDrawing } from '../api/api'
+import ComboSelect from '../components/ComboSelect'
+import ConfirmModal from '../components/ConfirmModal'
+import type { DrawingMeta, DrawingRow, LookupData } from '../api/types'
 
 interface ViewerProps {
   id: number

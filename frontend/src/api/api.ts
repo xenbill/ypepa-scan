@@ -11,29 +11,18 @@ export interface UserInfo {
 }
 
 interface AuthResponse {
-  token: string
   expiresAt: string
   user: UserInfo
 }
 
-// ---- token storage (same keys/pattern as meleti-manager) -------------------
-const getToken = () => localStorage.getItem('authToken')
-
-function authHeaders(): Record<string, string> {
-  const token = getToken()
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-function clearSession() {
-  localStorage.removeItem('authToken')
-  localStorage.removeItem('tokenExpiresAt')
-  localStorage.removeItem('user')
-}
+// Auth: the server sets an HttpOnly session cookie on login; the browser sends it
+// automatically on every same-origin request (fetch, img, iframe, tiles), so no
+// token handling happens here. A 401 simply means "log in again".
 
 // ---- fetch helpers ---------------------------------------------------------
 async function getJson<T>(url: string): Promise<T> {
-  const r = await fetch(url, { headers: authHeaders() })
-  if (r.status === 401) { clearSession(); throw new UnauthorizedError() }
+  const r = await fetch(url)
+  if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) throw new Error(`Σφάλμα διακομιστή (${r.status})`)
   return r.json() as Promise<T>
 }
@@ -48,18 +37,12 @@ export async function login(username: string, password: string): Promise<UserInf
   if (r.status === 401) throw new Error('Λάθος όνομα χρήστη ή κωδικός.')
   if (!r.ok) throw new Error(`Σφάλμα διακομιστή (${r.status})`)
   const auth = (await r.json()) as AuthResponse
-  localStorage.setItem('authToken', auth.token)
-  localStorage.setItem('tokenExpiresAt', auth.expiresAt)
-  localStorage.setItem('user', JSON.stringify(auth.user))
   return auth.user
 }
 
+/** Server expires the session cookie. */
 export async function logout(): Promise<void> {
-  try {
-    await fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() })
-  } finally {
-    clearSession()
-  }
+  await fetch('/api/auth/logout', { method: 'POST' })
 }
 
 export const getMe = () => getJson<UserInfo>('/api/auth/me')
@@ -67,10 +50,10 @@ export const getMe = () => getJson<UserInfo>('/api/auth/me')
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   const r = await fetch('/api/auth/change-password', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ currentPassword, newPassword }),
   })
-  if (r.status === 401) { clearSession(); throw new UnauthorizedError() }
+  if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) {
     const body = (await r.json().catch(() => null)) as { error?: string } | null
     throw new Error(body?.error ?? `Σφάλμα διακομιστή (${r.status})`)
@@ -108,10 +91,10 @@ export function searchDrawings(f: Filters, sort: Sort | null, page: number, page
 export const getDrawing = (id: number) => getJson<DrawingRow>(`/api/drawings/${id}`)
 export const getViewInfo = (id: number) => getJson<ViewInfo>(`/api/drawings/${id}/view`)
 
-/** Downloads via fetch so the Authorization header is sent (plain links can't). */
+/** Downloads via fetch so a 401 can be handled instead of showing an error page. */
 export async function downloadFile(id: number): Promise<void> {
-  const r = await fetch(`/api/drawings/${id}/file`, { headers: authHeaders() })
-  if (r.status === 401) { clearSession(); throw new UnauthorizedError() }
+  const r = await fetch(`/api/drawings/${id}/file`)
+  if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) throw new Error(`Σφάλμα λήψης (${r.status})`)
   const disposition = r.headers.get('Content-Disposition') ?? ''
   const match = /filename\*?=(?:UTF-8'')?"?([^";]+)/i.exec(disposition)
@@ -128,16 +111,16 @@ export async function downloadFile(id: number): Promise<void> {
 export async function updateDrawing(id: number, meta: DrawingMeta): Promise<void> {
   const r = await fetch(`/api/drawings/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(meta),
   })
-  if (r.status === 401) { clearSession(); throw new UnauthorizedError() }
+  if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) throw new Error(`Σφάλμα αποθήκευσης (${r.status})`)
 }
 
 export async function importDrawing(formData: FormData): Promise<{ id: number }> {
-  const r = await fetch('/api/drawings', { method: 'POST', headers: authHeaders(), body: formData })
-  if (r.status === 401) { clearSession(); throw new UnauthorizedError() }
+  const r = await fetch('/api/drawings', { method: 'POST', body: formData })
+  if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) {
     const body = (await r.json().catch(() => null)) as { error?: string } | null
     throw new Error(body?.error ?? `Σφάλμα διακομιστή (${r.status})`)
@@ -146,8 +129,8 @@ export async function importDrawing(formData: FormData): Promise<{ id: number }>
 }
 
 export async function deleteDrawing(id: number): Promise<void> {
-  const r = await fetch(`/api/drawings/${id}`, { method: 'DELETE', headers: authHeaders() })
-  if (r.status === 401) { clearSession(); throw new UnauthorizedError() }
+  const r = await fetch(`/api/drawings/${id}`, { method: 'DELETE' })
+  if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) throw new Error(`Σφάλμα διαγραφής (${r.status})`)
 }
 
@@ -157,10 +140,10 @@ export type LookupType = 'eidos' | 'kathgoria' | 'ypokatigoria' | 'xoros'
 async function lookupCall(url: string, method: string, body?: object): Promise<void> {
   const r = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   })
-  if (r.status === 401) { clearSession(); throw new UnauthorizedError() }
+  if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) {
     const b = (await r.json().catch(() => null)) as { error?: string } | null
     throw new Error(b?.error ?? `Σφάλμα διακομιστή (${r.status})`)

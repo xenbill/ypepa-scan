@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { importDrawing } from './api'
+import { importDrawing } from '../api/api'
 import ComboSelect from './ComboSelect'
-import type { LookupData } from './types'
+import type { LookupData } from '../api/types'
 
 interface ImportFormProps {
   lookups: LookupData

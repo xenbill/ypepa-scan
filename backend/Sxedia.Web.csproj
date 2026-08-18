@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <Target Name="PostPublishScript" AfterTargets="Publish">
-    <Exec Command="cd ..\..\frontend &amp;&amp; npm run build" />
+    <Exec Command="cd ..\frontend &amp;&amp; npm run build" />
     <Exec Command="robocopy $(ProjectDir)wwwroot $(PublishDir)wwwroot /MIR /LOG:$(PublishDir)robocopy.log" IgnoreExitCode="true" />
   </Target>
 
