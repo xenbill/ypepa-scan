@@ -11,7 +11,14 @@ import ComboSelect from './components/ComboSelect'
 import ImportForm from './components/ImportForm'
 
 const SKELETON_WIDTHS = ['70%', '45%', '85%', '60%', '50%', '78%']
-const PAGE_SIZE = 20
+const PAGE_SIZES = [10, 20, 50, 100] // server clamps to 100
+const PAGE_SIZE_KEY = 'sxedia.pageSize'
+function loadPageSize(): number {
+  try {
+    const v = Number(localStorage.getItem(PAGE_SIZE_KEY))
+    return PAGE_SIZES.includes(v) ? v : 20
+  } catch { return 20 } // storage disabled/full: just use the default
+}
 
 // Column set and order mirror the legacy "Αναζήτηση σχεδίων" list.
 const COLUMNS: { key: string; label: string; sortable: boolean }[] = [
@@ -36,14 +43,20 @@ export default function App() {
   const [filters, setFilters] = useState<Filters>(emptyFilters)
   const [sort, setSort] = useState<Sort | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(loadPageSize)
+  function changePageSize(n: number) {
+    setPageSize(n)
+    setPage(1)
+    try { localStorage.setItem(PAGE_SIZE_KEY, String(n)) } catch { /* ignore */ }
+  }
   const [showImport, setShowImport] = useState(params.get('import') === '1')
 
   const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: ({ signal }) => getLookups(signal), staleTime: Infinity })
   const lookups = lookupsQuery.data
 
   const searchQuery = useQuery({
-    queryKey: ['drawings', filters, sort, page],
-    queryFn: ({ signal }) => searchDrawings(filters, sort, page, PAGE_SIZE, signal),
+    queryKey: ['drawings', filters, sort, page, pageSize],
+    queryFn: ({ signal }) => searchDrawings(filters, sort, page, pageSize, signal),
     placeholderData: keepPreviousData,
   })
   const result = searchQuery.data
@@ -75,7 +88,7 @@ export default function App() {
   const ypokatOptions = (lookups?.ypokatErg ?? []).filter(
     (y) => !filters.kathg || y.parentId === Number(filters.kathg),
   )
-  const pages = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1
+  const pages = result ? Math.max(1, Math.ceil(result.total / pageSize)) : 1
 
   return (
     <>
@@ -207,6 +220,12 @@ export default function App() {
           <button disabled={page <= 1 || refetching} onClick={() => setPage(page - 1)}>‹ Προηγούμενη</button>
           <span>Σελίδα {page} / {pages} — {result.total} σχέδια</span>
           <button disabled={page >= pages || refetching} onClick={() => setPage(page + 1)}>Επόμενη ›</button>
+          <label className="pager-size">
+            Ανά σελίδα{' '}
+            <select value={pageSize} disabled={refetching} onChange={(e) => changePageSize(Number(e.target.value))}>
+              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
         </div>
       )}
 

@@ -361,6 +361,8 @@ table.results td:last-child { white-space: nowrap; text-align: right; }
   color: var(--ink-soft); font-size: 13px;
 }
 .pager span { font-variant-numeric: tabular-nums; }
+.pager-size { margin-left: 12px; }
+.pager-size select { font-size: 13px; padding: 3px 6px; margin-left: 2px; }
 
 .status-ok { color: var(--ok); }
 .status-err { color: var(--redline); }
