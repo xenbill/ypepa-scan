@@ -86,12 +86,43 @@ small { color: var(--ink-soft); }
 .nav a:hover { color: #fff; }
 .nav a.active { color: #fff; border-bottom-color: #8fc1f2; }
 
-.appbar-right { display: flex; align-items: center; gap: 12px; color: #b9c9db; font-size: 13px; }
-.appbar-right strong { color: #fff; }
-.appbar-right button {
+.appbar-right { position: relative; display: flex; align-items: center; color: #b9c9db; font-size: 13px; }
+.user-menu-btn {
+  display: flex; align-items: center; gap: 8px;
   background: transparent; color: #c6d1e0; border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 4px 10px 4px 5px;
 }
-.appbar-right button:hover { background: var(--blueprint-soft); border-color: rgba(255, 255, 255, 0.6); color: #fff; }
+.user-menu-btn strong { color: #fff; }
+.user-menu-btn:hover, .user-menu-btn.open {
+  background: var(--blueprint-soft); border-color: rgba(255, 255, 255, 0.6); color: #fff;
+}
+.user-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18); color: #fff;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+}
+.user-caret { font-size: 10px; opacity: 0.8; }
+.user-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
+  min-width: 200px; padding: 6px;
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 3px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+.user-menu-head {
+  display: flex; flex-direction: column; padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--border-soft); margin-bottom: 4px;
+}
+.user-menu-head strong { color: var(--ink); font-size: 13px; }
+.user-menu-head span { color: var(--ink-soft); font-size: 12px; }
+.user-menu button {
+  display: block; width: 100%; text-align: left;
+  background: transparent; border: 0; color: var(--ink);
+  padding: 7px 10px; border-radius: 2px; font-size: 13px;
+}
+.user-menu button:hover { background: var(--accent-wash); color: var(--accent-dark); }
+.user-menu button:disabled { opacity: 0.6; }
 
 main.page { padding: 20px 24px 48px; max-width: 1680px; margin: 0 auto; }
 .page-title { font-size: 18px; margin-bottom: 4px; }
