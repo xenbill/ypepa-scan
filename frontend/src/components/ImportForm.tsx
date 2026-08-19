@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AbortedError, formatMb, importDrawing, pingSession, type UploadProgress } from '../api/api'
 import ComboSelect from './ComboSelect'
 import { ProgressBar, Spinner } from './Loading'
+import { monadaForEdit } from '../api/types'
 import type { LookupData } from '../api/types'
 
 interface ImportFormProps {
@@ -131,7 +132,7 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
                 <th>Μονάδα</th>
                 <td>
                   <input type="hidden" name="hstrId" value={hstrId} />
-                  <ComboSelect options={lookups.monada} value={hstrId} allLabel="—" onChange={setHstrId} />
+                  <ComboSelect options={monadaForEdit(lookups)} value={hstrId} allLabel="—" onChange={setHstrId} />
                 </td>
                 <th>Υπομονάδα</th>
                 <td><input name="titlosErg" maxLength={500} /></td>

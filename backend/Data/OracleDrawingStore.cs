@@ -52,7 +52,17 @@ public sealed class OracleDrawingStore : IDrawingStore
                              where s.HSTR_ID = h.HSTR_ID and nvl(s.DELETED, 0) = 0)
                order by h.TITLE"))
             .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
-        return new LookupData(eidos, kathg, ypokat, xoros, monada, monadaInUse);
+        // Create/edit: only Μονάδες (same query as the legacy WinForms app).
+        var monadaEdit = (await con.QueryAsync<(long, string)>(
+            $@"select h.HSTR_ID, h.TITLE
+               from {_commonOwner}.G11HAF_STRUCTURE h
+               join {_commonOwner}.G11HAF_LOCATIONS l on l.HAFLOC_ID = h.HAFLOC_ID
+               where h.HSTR_ID = h.MONADA
+                 and h.HSTR_ID <> 999990
+                 and l.COUNTRY_ID = 24067
+               order by h.TITLE"))
+            .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
+        return new LookupData(eidos, kathg, ypokat, xoros, monada, monadaInUse, monadaEdit);
     }
 
     private string BaseSelect => $@"

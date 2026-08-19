@@ -22,6 +22,8 @@ public sealed class DemoDrawingStore : IDrawingStore
         public List<Lookup> YpokatErg { get; set; } = [];
         public List<Lookup> XorosApoth { get; set; } = [];
         public List<Lookup> Monada { get; set; } = [];
+        /// <summary>Ids of Monada entries that are top-level Μονάδες (offered on create/edit).</summary>
+        public List<long> MonadaEditIds { get; set; } = [];
         public List<DemoRow> Drawings { get; set; } = [];
     }
 
@@ -76,7 +78,8 @@ public sealed class DemoDrawingStore : IDrawingStore
         var db = Load();
         var used = db.Drawings.Where(d => !d.Deleted && d.HstrId is not null).Select(d => d.HstrId!.Value).ToHashSet();
         var monadaInUse = db.Monada.Where(m => used.Contains(m.Id)).ToList();
-        return Task.FromResult(new LookupData(db.EidosSxed, db.KathgoriaErg, db.YpokatErg, db.XorosApoth, db.Monada, monadaInUse));
+        var monadaEdit = db.Monada.Where(m => db.MonadaEditIds.Contains(m.Id)).ToList();
+        return Task.FromResult(new LookupData(db.EidosSxed, db.KathgoriaErg, db.YpokatErg, db.XorosApoth, db.Monada, monadaInUse, monadaEdit));
     }
 
     private DrawingRow ToRow(DemoDb db, DemoRow d)

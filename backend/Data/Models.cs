@@ -9,7 +9,13 @@ public record LookupData(
     IReadOnlyList<Lookup> XorosApoth,
     IReadOnlyList<Lookup> Monada,
     /// <summary>Subset of Monada referenced by at least one live drawing (search filter only).</summary>
-    IReadOnlyList<Lookup> MonadaInUse);
+    IReadOnlyList<Lookup> MonadaInUse,
+    /// <summary>
+    /// Units offered when creating/editing a drawing: top-level Μονάδες only
+    /// (HSTR_ID = MONADA, not the 999990 placeholder, Greek locations) — same
+    /// rule as the legacy app. Display/search still use the full Monada list.
+    /// </summary>
+    IReadOnlyList<Lookup> MonadaEdit);
 
 /// <summary>
 /// Init-property record (not positional): Dapper needs a parameterless constructor to

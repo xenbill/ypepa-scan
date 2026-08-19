@@ -15,6 +15,8 @@ export interface LookupData {
   monada: Lookup[]
   /** Subset of monada with at least one live drawing — search filter only */
   monadaInUse: Lookup[]
+  /** Top-level Μονάδες only — offered on create/edit (see monadaForEdit) */
+  monadaEdit: Lookup[]
 }
 
 export interface DrawingRow {
@@ -91,4 +93,18 @@ export interface ViewInfo {
   thumbUrl: string
   width: number | null
   height: number | null
+}
+
+/**
+ * Options for the Μονάδα dropdown on create/edit: the top-level Μονάδες, plus
+ * the record's current unit when it is not one of them (old rows may point at
+ * a sub-unit) so editing never silently drops it.
+ */
+export function monadaForEdit(lookups: LookupData, currentId?: string | number | null): Lookup[] {
+  const list = lookups.monadaEdit
+  if (currentId == null || currentId === '') return list
+  const id = Number(currentId)
+  if (list.some((m) => m.id === id)) return list
+  const cur = lookups.monada.find((m) => m.id === id)
+  return cur ? [...list, cur] : list
 }

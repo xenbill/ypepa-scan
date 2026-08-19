@@ -7,6 +7,7 @@ import { NotFoundError } from '../api/api'
 import { StatusPage } from '../pages/StatusPage'
 import ComboSelect from '../components/ComboSelect'
 import ConfirmModal from '../components/ConfirmModal'
+import { monadaForEdit } from '../api/types'
 import type { DrawingMeta, DrawingRow, LookupData } from '../api/types'
 
 interface ViewerProps {
@@ -315,7 +316,7 @@ function MetaEditForm({ drawing, lookups, onDone }: {
         <label>Κατηγορία έργου<ComboSelect options={lookups.kathgoriaErg} {...num('kathgId')} /></label>
         <label>Υποκατηγορία έργου<ComboSelect options={ypokat} {...num('ypokatId')} /></label>
         <label>Περιγραφή έργου<textarea rows={2} maxLength={2000} {...text('perigrafhErg')} /></label>
-        <label>Μονάδα<ComboSelect options={lookups.monada} {...num('hstrId')} /></label>
+        <label>Μονάδα<ComboSelect options={monadaForEdit(lookups, form.hstrId)} {...num('hstrId')} /></label>
         <label>Υπομονάδα<input maxLength={500} {...text('titlosErg')} /></label>
       </div>
       <div className="meta-section">

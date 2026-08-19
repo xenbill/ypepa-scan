@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { AbortedError, formatMb, importDrawing, pingSession, UnauthorizedError, type UploadProgress } from '../api/api'
 import ComboSelect from './ComboSelect'
 import { ProgressBar, Spinner } from './Loading'
+import { monadaForEdit } from '../api/types'
 import type { Lookup, LookupData } from '../api/types'
 
 interface MassImportFormProps {
@@ -486,7 +487,7 @@ function MetaFieldsEditor({ value, onChange, lookups, ypokatOptions, placeholder
           <tr>
             <th>Μονάδα</th>
             <td>
-              <ComboSelect options={lookups.monada} value={value.hstrId} allLabel={inherit(lookups.monada, 'hstrId')}
+              <ComboSelect options={monadaForEdit(lookups)} value={value.hstrId} allLabel={inherit(lookups.monada, 'hstrId')}
                            onChange={(id) => set({ hstrId: id })} />
             </td>
             <th>Υπομονάδα</th>

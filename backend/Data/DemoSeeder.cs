@@ -38,7 +38,11 @@ public static class DemoSeeder
             Monada = new[]
             {
                 new Lookup(101, "Μονάδα Α"), new Lookup(102, "Μονάδα Β"), new Lookup(103, "Κεντρική Διοίκηση"),
+                new Lookup(104, "Τμήμα Μελετών (υπομονάδα)"),
             },
+            // Only top-level units are offered on create/edit; 104 stands in for a sub-unit
+            // that exists on old rows but is not in the dropdown.
+            MonadaEditIds = new List<long> { 101, 102, 103 },
             Drawings = new[]
             {
                 new DemoDrawingStore.DemoRow { SxedioId = 1, KodikosErg = "ΕΡΓ-2003-014", ArithmosSxed = "Α-014-01",
@@ -56,7 +60,7 @@ public static class DemoSeeder
                 new DemoDrawingStore.DemoRow { SxedioId = 4, KodikosErg = "ΕΡΓ-2015-033", ArithmosSxed = "Τ-033-01",
                     TitlosErg = "Επέκταση Τροχοδρόμου", TitlosSxed = "Οριζοντιογραφία",
                     PerigrafhSxed = "Τοπογραφικό διάγραμμα ζώνης επέκτασης", Hmer = new DateTime(2015, 3, 18),
-                    EidosId = 4, KathgId = 2, YpokatId = 3, XorosId = 3, HstrId = 103, DateIns = new DateTime(2015, 3, 30), UserIns = "DEMO" },
+                    EidosId = 4, KathgId = 2, YpokatId = 3, XorosId = 3, HstrId = 104, DateIns = new DateTime(2015, 3, 30), UserIns = "DEMO" },
             },
         };
 
