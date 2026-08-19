@@ -284,7 +284,7 @@ button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(28, 85, 144, 0.
 .combo-caret {
   position: absolute; right: 9px; top: 50%; margin-top: -8px;
   font-size: 10px; line-height: 16px; color: var(--ink-soft);
-  pointer-events: none;
+  padding: 0 4px; cursor: pointer;
 }
 .combo-list {
   position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 30;
