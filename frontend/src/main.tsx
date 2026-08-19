@@ -2,9 +2,9 @@ import { StrictMode } from 'react'
 import { LoadingBlock } from './components/Loading'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import './index.css'
-import { getMe, NotFoundError, UnauthorizedError } from './api/api'
+import { getMe, loginUrl, NotFoundError, UnauthorizedError } from './api/api'
 import { ErrorBoundary, NotFoundPage, StatusPage } from './pages/StatusPage'
 import App from './App'
 import Layout from './components/Layout'
@@ -14,7 +14,23 @@ import LoginPage from './pages/LoginPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import Viewer from './viewer/Viewer'
 
+// Session expired (401) anywhere — a list refetch, a tile, a save, an upload — lands
+// here once: drop all cached data and go to the login page, remembering where we were.
+// Screens don't need their own 401 handling.
+let redirecting = false
+function onUnauthorized(err: unknown) {
+  if (!(err instanceof UnauthorizedError) || redirecting) return
+  if (location.pathname.startsWith('/login')) return
+  redirecting = true
+  queryClient.clear()
+  // Full navigation (not the router) is fine and simplest from outside React;
+  // the app re-boots on the login page with the cache already empty.
+  location.assign(loginUrl())
+}
+
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: onUnauthorized }),
+  mutationCache: new MutationCache({ onError: onUnauthorized }),
   defaultOptions: {
     queries: {
       // Retrying a 401/404 only delays the message the user is going to see anyway.
@@ -30,7 +46,7 @@ function RequireAuth() {
   const me = useQuery({ queryKey: ['me'], queryFn: getMe, retry: false, staleTime: 5 * 60_000 })
   if (me.isPending) return <div className="page-loading"><LoadingBlock text="Έλεγχος σύνδεσης…" /></div>
   if (me.isError) {
-    if (me.error instanceof UnauthorizedError) return <Navigate to="/login" replace />
+    if (me.error instanceof UnauthorizedError) return <Navigate to={loginUrl()} replace />
     // Not a login problem: the API is down / unreachable. Don't bounce to the
     // login page (it would fail the same way) — say so and offer a retry.
     return (

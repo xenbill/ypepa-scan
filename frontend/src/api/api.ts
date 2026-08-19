@@ -8,6 +8,17 @@ export class NotFoundError extends Error {
   constructor() { super('Δεν βρέθηκε — ίσως έχει διαγραφεί.') }
 }
 
+/** Path to come back to after re-login: current path + query (never the login page itself). */
+export function loginUrl(returnTo?: string): string {
+  const here = returnTo ?? location.pathname + location.search
+  return here && here !== '/' && !here.startsWith('/login')
+    ? '/login?returnTo=' + encodeURIComponent(here)
+    : '/login'
+}
+
+/** Cheap session check (used before large uploads so 401 is caught before the bytes go out). */
+export const pingSession = () => getJson<UserInfo>('/api/auth/me')
+
 export interface UserInfo {
   username: string
   fullName: string

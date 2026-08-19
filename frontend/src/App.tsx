@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Skeleton, Spinner } from './components/Loading'
-import {
-  formatDate, getLookups, searchDrawings,
-  UnauthorizedError, type Sort,
-} from './api/api'
+import { formatDate, getLookups, searchDrawings, type Sort } from './api/api'
 import { emptyFilters, type Filters } from './api/types'
 import ComboSelect from './components/ComboSelect'
 import ImportForm from './components/ImportForm'
@@ -95,7 +92,6 @@ export default function App() {
   const refetching = searchQuery.isFetching && !initialLoading
 
   const error = lookupsQuery.error ?? searchQuery.error
-  if (error instanceof UnauthorizedError) return <Navigate to="/login" replace />
 
   function apply(next: Filters) {
     writeListState({ filters: next, page: 1 })

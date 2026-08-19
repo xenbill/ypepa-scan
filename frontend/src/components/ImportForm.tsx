@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { AbortedError, formatMb, importDrawing, type UploadProgress } from '../api/api'
+import { AbortedError, formatMb, importDrawing, pingSession, type UploadProgress } from '../api/api'
 import ComboSelect from './ComboSelect'
 import { ProgressBar, Spinner } from './Loading'
 import type { LookupData } from '../api/types'
@@ -24,10 +24,13 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: (fd: FormData) => {
+    mutationFn: async (fd: FormData) => {
       const ctrl = new AbortController()
       abortRef.current = ctrl
       setProgress({ loaded: 0, total: 0, saving: false })
+      // Pre-flight: if the session has expired, find out now (401 -> login) rather
+      // than after uploading a 200 MB scan. Also renews a sliding session.
+      await pingSession()
       return importDrawing(fd, setProgress, ctrl.signal)
     },
     onSettled: () => { abortRef.current = null; setProgress(null) },

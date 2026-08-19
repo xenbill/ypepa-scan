@@ -30,6 +30,8 @@ public static class JwtAuth
 {
     public const string CookieName = "sxedia_auth";
     public const string CategoryClaim = "Category";
+    /// <summary>Unix seconds of the original login; carried across renewals to enforce the absolute cap.</summary>
+    public const string SessionStartClaim = "SessionStart";
 
     public static void AddJwtAuthentication(this IServiceCollection services, IConfiguration cfg)
     {
@@ -70,6 +72,29 @@ public static class JwtAuth
                     {
                         if (string.IsNullOrEmpty(ctx.Token) && ctx.Request.Cookies.TryGetValue(CookieName, out var t))
                             ctx.Token = t;
+                        return Task.CompletedTask;
+                    },
+                    // Sliding expiry: a JWT can't be extended, so once less than half its
+                    // lifetime is left we mint a fresh one (same claims, new exp) and replace
+                    // the cookie. Active users are never cut off; idle ones expire normally.
+                    // Absolute cap (Jwt:MaxSessionHours, default 12) from the original login:
+                    // after that no renewal, so a long-lived/stolen cookie can't live forever.
+                    OnTokenValidated = ctx =>
+                    {
+                        // (.NET 8+ hands a JsonWebToken here, older a JwtSecurityToken — use the base type.)
+                        if (ctx.SecurityToken is not { } jwt || ctx.Principal is null)
+                            return Task.CompletedTask;
+                        var lifetime = TimeSpan.FromMinutes(TokenMinutes(cfg));
+                        var remaining = jwt.ValidTo - DateTime.UtcNow;
+                        if (remaining > lifetime / 2) return Task.CompletedTask;
+
+                        var start = SessionStart(ctx.Principal) ?? jwt.ValidFrom;
+                        var maxHours = cfg.GetValue<double?>("Jwt:MaxSessionHours") ?? 12;
+                        if (DateTime.UtcNow - start >= TimeSpan.FromHours(maxHours))
+                            return Task.CompletedTask; // cap reached: let it expire
+
+                        var (token, expiresAt) = GenerateAccessToken(CurrentUser(ctx.Principal), cfg, start);
+                        ctx.HttpContext.Response.Cookies.Append(CookieName, token, CookieOptions(ctx.HttpContext, expiresAt));
                         return Task.CompletedTask;
                     },
                 };
@@ -139,6 +164,14 @@ public static class JwtAuth
             category);
     }
 
+    private static int TokenMinutes(IConfiguration cfg)
+        => int.TryParse(cfg["Jwt:ExpiresInMinutes"], out var m) ? m : 480;
+
+    private static DateTime? SessionStart(ClaimsPrincipal principal)
+        => long.TryParse(principal.FindFirstValue(SessionStartClaim), out var s)
+            ? DateTimeOffset.FromUnixTimeSeconds(s).UtcDateTime
+            : null;
+
     private static string ClientIp(HttpContext http)
         => http.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "";
 
@@ -156,16 +189,18 @@ public static class JwtAuth
         IsEssential = true,
     };
 
-    private static (string Token, DateTime ExpiresAt) GenerateAccessToken(UserDto user, IConfiguration cfg)
+    /// <param name="sessionStart">Original login time (UTC) when renewing; null = new login.</param>
+    private static (string Token, DateTime ExpiresAt) GenerateAccessToken(UserDto user, IConfiguration cfg, DateTime? sessionStart = null)
     {
-        var minutes = int.TryParse(cfg["Jwt:ExpiresInMinutes"], out var m) ? m : 480;
-        var expiresAt = DateTime.Now.AddMinutes(minutes);
+        var expiresAt = DateTime.Now.AddMinutes(TokenMinutes(cfg));
+        var start = new DateTimeOffset(sessionStart ?? DateTime.UtcNow).ToUnixTimeSeconds();
 
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name, user.Username),
             new(ClaimTypes.Role, user.Role),
             new("FullName", user.FullName),
+            new(SessionStartClaim, start.ToString(), ClaimValueTypes.Integer64),
         };
         if (user.Category is not null)
             claims.Add(new Claim(CategoryClaim, user.Category.Value.ToString()));

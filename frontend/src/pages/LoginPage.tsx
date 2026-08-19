@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAuthMode, login } from '../api/api'
 
@@ -8,7 +8,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [category, setCategory] = useState<number | null>(null)
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const queryClient = useQueryClient()
+  // Where to go after login: the page the session expired on (same-origin path only).
+  const rt = params.get('returnTo')
+  const returnTo = rt && rt.startsWith('/') && !rt.startsWith('//') && !rt.startsWith('/login') ? rt : '/'
 
   // Dev mode: plain username/password. MIS mode: ΑΜΑ + κατηγορία προσωπικού (list comes from the login service).
   const mode = useQuery({ queryKey: ['auth-mode'], queryFn: getAuthMode, staleTime: 5 * 60_000 })
@@ -19,7 +23,7 @@ export default function LoginPage() {
     mutationFn: () => login(username, password, misLogin ? category : null),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['me'] })
-      navigate('/', { replace: true })
+      navigate(returnTo, { replace: true })
     },
   })
 
