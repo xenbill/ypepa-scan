@@ -42,7 +42,12 @@ App bar: ΥΠΕΠΑ emblem (also the favicon), brand links home (tooltip shows t
 version), nav Αρχική / Σχέδια / Λίστες επιλογών (ADMIN only) / Οδηγίες, user
 dropdown (avatar initials = surname + first name, full MIS display name clipped
 with an ellipsis) with the user's rights (✓ / dimmed, see «Application rights»),
-change password / logout / version (→ changelog).
+«Εμφάνιση» theme switch (Αυτόματο = follow the OS via `prefers-color-scheme`,
+Φωτεινό, Σκοτεινό; stored in `localStorage` `ypepascan.theme`, applied as
+`<html data-theme>` by `src/theme.ts` and an inline script in `index.html` so
+there's no flash; `index.css` switches only CSS variables under
+`[data-theme="dark"]`, the app bar stays blueprint blue, the viewer is dark in
+both; print forces light), change password / logout / version (→ changelog).
 
 ## API
 

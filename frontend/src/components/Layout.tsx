@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate, useOutletContext } from 'react-rout
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { APP_RIGHTS, hasRight, logout, type UserInfo } from '../api/api'
 import { APP_VERSION } from '../version'
+import { getThemePref, setThemePref, type ThemePref } from '../theme'
 
 export default function Layout() {
   const user = useOutletContext<UserInfo>()
@@ -16,6 +17,10 @@ export default function Layout() {
       navigate('/login', { replace: true })
     },
   })
+
+  // Theme choice lives in localStorage (theme.ts); state here only re-renders the switch.
+  const [theme, setTheme] = useState<ThemePref>(getThemePref)
+  function pickTheme(t: ThemePref) { setThemePref(t); setTheme(t) }
 
   // User menu (top right): closes on outside click, Escape, or picking an item.
   const [menuOpen, setMenuOpen] = useState(false)
@@ -78,6 +83,19 @@ export default function Layout() {
                     )
                   })}
                 </ul>
+              </div>
+              <div className="user-menu-theme" aria-label="Εμφάνιση">
+                <span className="user-menu-theme-label">Εμφάνιση</span>
+                <span className="theme-switch" role="radiogroup">
+                  {([['auto', 'Αυτόματο'], ['light', 'Φωτεινό'], ['dark', 'Σκοτεινό']] as [ThemePref, string][]).map(([v, label]) => (
+                    <button key={v} type="button" role="radio" aria-checked={theme === v}
+                            className={theme === v ? 'active' : undefined}
+                            title={v === 'auto' ? 'Ακολουθεί τη ρύθμιση των Windows' : undefined}
+                            onClick={() => pickTheme(v)}>
+                      {label}
+                    </button>
+                  ))}
+                </span>
               </div>
               <button role="menuitem" onClick={() => { setMenuOpen(false); navigate('/change-password') }}>
                 Αλλαγή κωδικού

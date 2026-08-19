@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import './index.css'
+import { applyTheme, watchOsTheme } from './theme'
 import { getMe, loginUrl, NetworkError, NotFoundError, UnauthorizedError } from './api/api'
 import { ErrorBoundary, NotFoundPage, StatusPage } from './pages/StatusPage'
 import App from './App'
@@ -98,6 +99,9 @@ function ViewerRoute() {
   const from = (location.state as { from?: string } | null)?.from ?? ''
   return <Viewer id={numId} onClose={() => navigate('/drawings' + from)} />
 }
+
+applyTheme()
+watchOsTheme()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

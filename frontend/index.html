@@ -9,6 +9,17 @@
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/favicon-48.png" />
     <title>Σχέδια ΥΠΕΠΑ</title>
+    <!-- Theme before first paint (same rules as src/theme.ts): stored choice, else the OS setting. ES5 on purpose. -->
+    <script>
+      (function () {
+        var t = null;
+        try { t = localStorage.getItem('ypepascan.theme'); } catch (e) {}
+        if (t !== 'light' && t !== 'dark') {
+          t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
