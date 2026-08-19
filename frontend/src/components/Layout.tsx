@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { logout, type UserInfo } from '../api/api'
 
@@ -36,13 +36,13 @@ export default function Layout() {
   return (
     <>
       <header className="appbar">
-        <div className="brand">
+        <Link to="/" className="brand" title="Αρχική">
           <span className="brand-mark">ΣΥ</span>
           <div>
             <h1>Σχέδια ΥΠΕΠΑ</h1>
             <span className="brand-sub">ΑΡΧΕΙΟ ΤΕΧΝΙΚΩΝ ΣΧΕΔΙΩΝ</span>
           </div>
-        </div>
+        </Link>
         <nav className="nav">
           <NavLink to="/" end>Αρχική</NavLink>
           <NavLink to="/sxedia">Σχέδια</NavLink>
