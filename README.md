@@ -33,14 +33,15 @@ solution `Mis.YpepaScan.slnx`. Deployed DLL: `Mis.YpepaScan.Web.dll` (see
 | `/` | Home: counts per category / type / unit — each row links to the filtered list |
 | `/drawings` | Drawing list: filters, sort, page, page size (10/20/50/100, remembered) all live in the URL so Back/close return to the same list |
 | `/drawings/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
-| `/lookups` | Maintain lookup tables (categories, types, …) |
+| `/lookups` | Maintain lookup tables (categories, types, …) — `ADMIN` right only |
 | `/manual` | In-app user manual (Οδηγίες): tabs per area (Γενικά, Αναζήτηση & λίστα, Προβολή/Επεξεργασία, Καταχώριση incl. supported file types, Μαζική καταχώριση, Λίστες επιλογών) with screenshots, plus «Έκδοση & αλλαγές» (version + changelog). `?tab=version` deep-links a tab |
 | `/change-password` | Change password (MIS service or dev store) |
 | `*` | Proper 404 / error pages |
 
 App bar: ΥΠΕΠΑ emblem (also the favicon), brand links home (tooltip shows the
-version), nav Αρχική / Σχέδια / Λίστες επιλογών / Οδηγίες, user dropdown
-(avatar + name) with change password / logout / version (→ changelog).
+version), nav Αρχική / Σχέδια / Λίστες επιλογών (ADMIN only) / Οδηγίες, user
+dropdown (avatar + name) with the user's rights (✓ / dimmed, see «Application
+rights»), change password / logout / version (→ changelog).
 
 ## API
 
@@ -66,7 +67,33 @@ Two credential backends, selected at startup by `Auth:DevLogin`:
   carried in the JWT. Password change goes through the same service.
 - **`true` (dev)** — `DevAuthBackend`: single user `Auth:Username`/`Auth:Password`
   (default `dev`/`dev`); after a change-password the SHA-256 hash in `auth.json`
-  takes precedence.
+  takes precedence. Its rights come from `Auth:Rights` (see below).
+
+### Application rights
+
+The five rights of the legacy WinForms app (MIS login DB, APPLIC_ID 83) are
+kept as-is — they are administered in the MIS user system, not in this app.
+The login service returns them per user as `APP_RIGHTS` (`APP_RIGHT` name /
+`APP_FUNCTION_ID`); `Auth/AppRights.cs` maps them, puts them in the JWT as
+`right` claims, and registers one authorization policy per right (a policy
+passes with that right **or** `ADMIN`). `GET /api/auth/me` returns
+`user.rights` (ADMIN is expanded to all five) so the SPA hides what the user
+cannot do and lists them (✓ / dimmed) in the user menu; the server enforces them anyway (403 → «Δεν έχετε δικαίωμα για αυτή
+την ενέργεια»).
+
+| Right (legacy id) | Legacy description | Gates in the web app |
+|---|---|---|
+| `VIEW` (2674) | Προβολή Σχεδίων | Baseline: required to log in at all (otherwise «Δεν έχετε δικαίωμα πρόσβασης…»); search, list, view, inline PDF, tiles |
+| `SCAN` (2676) | Σάρωση Σχεδίων | `POST /api/drawings` — Καταχώριση / Μαζική καταχώριση (buttons on the list page and the home page, `?import=` modals) |
+| `PRINT` (2677) | Εκτύπωση Σχεδίων | `GET /api/drawings/{id}/file` as attachment — «Λήψη πρωτοτύπου» (`?inline=true`, the viewer's PDF frame, is viewing). Without it the PDF iframe gets `#toolbar=0` so Chrome/Edge hide their download/print buttons (UI only; Firefox ignores it) |
+| `EDIT_SCANNED_SXEDIO` (2678) | Επεξεργασία Σχεδίου | `PUT`/`DELETE /api/drawings/{id}` — Επεξεργασία / Διαγραφή in the viewer |
+| `ADMIN` (2675) | Διαχειριστής Εφαρμογής | `POST`/`PUT`/`DELETE /api/lookups/*` — Λίστες επιλογών (nav link + page; direct URL shows a 403 page) and everything above |
+
+Dev mode: `Auth:Rights` is a `true`/`false` map per right name (`VIEW`,
+`SCAN`, `PRINT`, `EDIT_SCANNED_SXEDIO`, `ADMIN`), defaults in `appsettings.json`,
+overridable in `appsettings.Development.json`; section missing → all rights.
+It is read only by `DevAuthBackend` — with `Auth:DevLogin=false` it is ignored. Override per run with env vars, e.g.
+`Auth__Rights__ADMIN=false`.
 
 Token plumbing is shared (`Auth/JwtAuth.cs`): `POST /api/auth/login` issues a
 signed JWT and sets it as an **HttpOnly, SameSite=Lax** cookie (`ypepascan_auth`);

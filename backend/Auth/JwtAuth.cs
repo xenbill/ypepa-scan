@@ -9,7 +9,7 @@ namespace Mis.YpepaScan.Web.Auth;
 
 public record LoginRequestDto(string Username, string Password, int? Category);
 public record ChangePasswordRequestDto(string CurrentPassword, string NewPassword);
-public record UserDto(string Username, string FullName, string Role, int? Category);
+public record UserDto(string Username, string FullName, string Role, int? Category, IReadOnlyList<string> Rights);
 public record AuthResponseDto(DateTime ExpiresAt, UserDto User);
 public record AuthModeDto(bool DevLogin, IReadOnlyList<MisCategory> Categories);
 
@@ -24,7 +24,9 @@ public record AuthModeDto(bool DevLogin, IReadOnlyList<MisCategory> Categories);
 /// request. Credentials are checked by the registered <see cref="IAuthBackend"/>
 /// (Auth:DevLogin=true → config dev user, else the MIS LGNWS service). The
 /// employee category chosen at login is kept as a claim because the MIS
-/// change-password call needs it again.
+/// change-password call needs it again. Application rights (see <see cref="AppRights"/>)
+/// are claims too, so endpoints can require them with named policies; a request without
+/// the right gets 403.
 /// </summary>
 public static class JwtAuth
 {
@@ -99,7 +101,7 @@ public static class JwtAuth
                     },
                 };
             });
-        services.AddAuthorization();
+        services.AddAuthorization(AppRights.AddPolicies);
     }
 
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
@@ -116,10 +118,10 @@ public static class JwtAuth
             if (!result.Success || result.User is null)
                 return Results.Json(new { error = result.Error }, statusCode: StatusCodes.Status401Unauthorized);
 
-            var user = new UserDto(result.User.Username, result.User.FullName, result.User.Role, result.User.Category);
+            var user = new UserDto(result.User.Username, result.User.FullName, result.User.Role, result.User.Category, result.User.Rights);
             var (token, expiresAt) = GenerateAccessToken(user, cfg);
             http.Response.Cookies.Append(CookieName, token, CookieOptions(http, expiresAt));
-            Serilog.Log.Information("Login {User} (category {Category})", user.Username, user.Category);
+            Serilog.Log.Information("Login {User} (category {Category}, rights {Rights})", user.Username, user.Category, string.Join(",", user.Rights));
             return Results.Ok(new AuthResponseDto(expiresAt, user));
         });
 
@@ -161,7 +163,8 @@ public static class JwtAuth
             name,
             principal.FindFirstValue("FullName") ?? name,
             principal.FindFirstValue(ClaimTypes.Role) ?? "User",
-            category);
+            category,
+            AppRights.Of(principal));
     }
 
     private static int TokenMinutes(IConfiguration cfg)
@@ -204,6 +207,8 @@ public static class JwtAuth
         };
         if (user.Category is not null)
             claims.Add(new Claim(CategoryClaim, user.Category.Value.ToString()));
+        foreach (var right in user.Rights)
+            claims.Add(new Claim(AppRights.ClaimType, right));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(cfg["Jwt:Key"]!));
         var token = new JwtSecurityToken(

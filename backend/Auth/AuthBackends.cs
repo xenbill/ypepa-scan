@@ -1,9 +1,10 @@
 using System.Text;
+using static Mis.YpepaScan.Web.Auth.AuthBackendHelpers;
 using Mis.YpepaScan.Web.Auth.LoginService;
 
 namespace Mis.YpepaScan.Web.Auth;
 
-public sealed record AuthUser(string Username, string FullName, string Role, int? Category);
+public sealed record AuthUser(string Username, string FullName, string Role, int? Category, IReadOnlyList<string> Rights);
 public sealed record AuthResult(bool Success, string? Error, AuthUser? User)
 {
     public static AuthResult Fail(string error) => new(false, error, null);
@@ -25,6 +26,12 @@ public interface IAuthBackend
     Task<string?> ChangePasswordAsync(string username, int? category, string currentPassword, string newPassword, string userIp);
 }
 
+file static class AuthBackendHelpers
+{
+    public const string NoAccessMessage = "Δεν έχετε δικαίωμα πρόσβασης στην εφαρμογή «Σχέδια ΥΠΕΠΑ».";
+    public static string RoleOf(IReadOnlyList<string> rights) => rights.Contains(AppRights.Admin) ? "Admin" : "User";
+}
+
 /// <summary>
 /// Dev-only credential check: Auth:Username / Auth:Password from config; once changed via
 /// the change-password page, the SHA-256 hash stored in auth.json takes precedence.
@@ -37,9 +44,14 @@ public sealed class DevAuthBackend(IConfiguration cfg, IWebHostEnvironment env) 
         => Task.FromResult<IReadOnlyList<MisCategory>>([]);
 
     public Task<AuthResult> LoginAsync(string username, string password, int? category, string userIp)
-        => Task.FromResult(Validate(username, password)
-            ? AuthResult.Ok(new AuthUser(username, username, "User", null))
-            : AuthResult.Fail("Λάθος όνομα χρήστη ή κωδικός."));
+    {
+        if (!Validate(username, password))
+            return Task.FromResult(AuthResult.Fail("Λάθος όνομα χρήστη ή κωδικός."));
+        var rights = AppRights.FromConfig(cfg); // Auth:Rights:{VIEW,SCAN,...} = true/false
+        if (!rights.Contains(AppRights.View))
+            return Task.FromResult(AuthResult.Fail(NoAccessMessage));
+        return Task.FromResult(AuthResult.Ok(new AuthUser(username, username, RoleOf(rights), null, rights)));
+    }
 
     public Task<string?> ChangePasswordAsync(string username, int? category, string currentPassword, string newPassword, string userIp)
     {
@@ -97,7 +109,17 @@ public sealed class MisAuthBackend(MisLoginService mis, ILogger<MisAuthBackend> 
             return AuthResult.Fail(string.IsNullOrWhiteSpace(user.SRV_MSG) ? "Λάθος ΑΜΑ ή κωδικός." : user.SRV_MSG);
         // Deliberately no DtExp / MustChangePassword gate: an expired password still logs in.
 
-        return AuthResult.Ok(new AuthUser(username.Trim(), user.UserTitle ?? username, "User", category));
+        // Rights come from the service per user/app (APP_RIGHTS). VIEW is the baseline:
+        // an account without it (or with no rights at all for this app) cannot log in.
+        var rights = AppRights.FromMis(user.APP_RIGHTS);
+        if (!rights.Contains(AppRights.View))
+        {
+            log.LogWarning("Login refused for {User}: no VIEW right (service rights: {Rights})", username,
+                string.Join(",", (user.APP_RIGHTS ?? []).Select(r => $"{r.APP_RIGHT1}/{r.APP_FUNCTION_ID}")));
+            return AuthResult.Fail(NoAccessMessage);
+        }
+
+        return AuthResult.Ok(new AuthUser(username.Trim(), user.UserTitle ?? username, RoleOf(rights), category, rights));
     }
 
     public async Task<string?> ChangePasswordAsync(string username, int? category, string currentPassword, string newPassword, string userIp)

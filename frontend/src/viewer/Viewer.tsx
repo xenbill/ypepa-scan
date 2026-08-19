@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useOutletContext } from 'react-router-dom'
 import OpenSeadragon from 'openseadragon'
-import { deleteDrawing, downloadFile, formatDate, formatFileType, formatMb, getDrawing, getLookups, getViewInfo, updateDrawing, UnauthorizedError } from '../api/api'
+import { deleteDrawing, downloadFile, formatDate, formatFileType, formatMb, getDrawing, getLookups, getViewInfo, hasRight, updateDrawing, UnauthorizedError, type UserInfo } from '../api/api'
 import { SkeletonLines, Spinner } from '../components/Loading'
 import { NotFoundError } from '../api/api'
 import { StatusPage } from '../pages/StatusPage'
@@ -21,6 +22,11 @@ export default function Viewer({ id, onClose }: ViewerProps) {
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const queryClient = useQueryClient()
+  // Rights: PRINT → Λήψη πρωτοτύπου, EDIT_SCANNED_SXEDIO → Επεξεργασία / Διαγραφή
+  // (the server enforces them too; here we just don't show what the user can't do).
+  const user = useOutletContext<UserInfo>()
+  const canPrint = hasRight(user, 'PRINT')
+  const canEdit = hasRight(user, 'EDIT_SCANNED_SXEDIO')
 
   // Download: fetches the whole file before the browser's save dialog appears, so
   // the button must show it's working (and refuse a second click meanwhile).
@@ -171,12 +177,14 @@ export default function Viewer({ id, onClose }: ViewerProps) {
               <button onClick={fit}>Προσαρμογή</button>
             </>
           )}
-          <button className={download.isPending ? 'btn-busy' : undefined} disabled={download.isPending}
-                  onClick={() => download.mutate()}>
-            {download.isPending && <Spinner size={13} />}
-            {download.isPending ? 'Λήψη…' : 'Λήψη πρωτοτύπου'}
-          </button>
-          <button className="danger" onClick={() => setConfirmDelete(true)}>Διαγραφή</button>
+          {canPrint && (
+            <button className={download.isPending ? 'btn-busy' : undefined} disabled={download.isPending}
+                    onClick={() => download.mutate()}>
+              {download.isPending && <Spinner size={13} />}
+              {download.isPending ? 'Λήψη…' : 'Λήψη πρωτοτύπου'}
+            </button>
+          )}
+          {canEdit && <button className="danger" onClick={() => setConfirmDelete(true)}>Διαγραφή</button>}
           <button onClick={onClose}>Κλείσιμο</button>
         </span>
       </div>
@@ -197,12 +205,15 @@ export default function Viewer({ id, onClose }: ViewerProps) {
           </div>
         )}
         {info?.type === 'pdf'
-          ? <iframe className="viewer-canvas" title="PDF" src={info.url} />
+          // Without PRINT, ask the browser's PDF viewer to hide its toolbar (download/print
+          // buttons). Chrome/Edge honour #toolbar=0; Firefox ignores it. UI only — the
+          // server-side PRINT check covers the actual download endpoint.
+          ? <iframe className="viewer-canvas" title="PDF" src={info.url + (canPrint ? '' : '#toolbar=0')} />
           : <div className="viewer-canvas" ref={osdRef} style={{ visibility: info ? 'visible' : 'hidden' }} />}
         <div className="viewer-meta">
           <div className="meta-head">
             <h3>Στοιχεία σχεδίου</h3>
-            {!editing && drawing && (
+            {canEdit && !editing && drawing && (
               <button onClick={() => setEditing(true)}>Επεξεργασία</button>
             )}
           </div>

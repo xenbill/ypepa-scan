@@ -8,6 +8,11 @@ export class NotFoundError extends Error {
   constructor() { super('Δεν βρέθηκε — ίσως έχει διαγραφεί.') }
 }
 
+/** Logged in, but the account lacks the application right for this action (403). */
+export class ForbiddenError extends Error {
+  constructor() { super('Δεν έχετε δικαίωμα για αυτή την ενέργεια.') }
+}
+
 /** The request never reached the server (API down, network off, proxy refused).
     Handled centrally in main.tsx: the auth gate re-checks and shows the
     "Ο διακομιστής δεν αποκρίνεται" page instead of a per-screen error line. */
@@ -29,6 +34,7 @@ async function request(url: string, init?: RequestInit): Promise<Response> {
     throw e
   }
   if (r.status === 502 || r.status === 503 || r.status === 504) throw new NetworkError()
+  if (r.status === 403) throw new ForbiddenError()
   return r
 }
 
@@ -48,6 +54,29 @@ export interface UserInfo {
   fullName: string
   role: string
   category: number | null
+  /** Application rights (see AppRight). ADMIN is expanded server-side to all rights. */
+  rights: string[]
+}
+
+/** The five application rights of the legacy app, as registered in the MIS login
+    database (APPLIC_ID 83) and returned per user by the login service:
+    VIEW — search/list/view (baseline, required to log in), SCAN — Καταχώριση /
+    Μαζική καταχώριση, PRINT — Λήψη πρωτοτύπου, EDIT_SCANNED_SXEDIO — Επεξεργασία /
+    Διαγραφή, ADMIN — Λίστες επιλογών (+ everything else). */
+export type AppRight = 'VIEW' | 'SCAN' | 'PRINT' | 'EDIT_SCANNED_SXEDIO' | 'ADMIN'
+
+/** Display order + Greek labels (the legacy descriptions), e.g. for the user menu. */
+export const APP_RIGHTS: { right: AppRight; label: string }[] = [
+  { right: 'ADMIN', label: 'Διαχειριστής Εφαρμογής' },
+  { right: 'VIEW', label: 'Προβολή Σχεδίων' },
+  { right: 'SCAN', label: 'Σάρωση Σχεδίων' },
+  { right: 'PRINT', label: 'Εκτύπωση Σχεδίων' },
+  { right: 'EDIT_SCANNED_SXEDIO', label: 'Επεξεργασία Σχεδίου' },
+]
+
+export function hasRight(user: UserInfo | undefined, right: AppRight): boolean {
+  const rights = user?.rights ?? []
+  return rights.indexOf(right) >= 0 || rights.indexOf('ADMIN') >= 0
 }
 
 export interface AuthCategory {

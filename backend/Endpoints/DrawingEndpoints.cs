@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Serilog;
+using Mis.YpepaScan.Web.Auth;
 using Mis.YpepaScan.Web.Data;
 using Mis.YpepaScan.Web.Imaging;
 
@@ -36,9 +37,14 @@ public static class DrawingEndpoints
 
         // Original file, streamed straight from the store. ?inline=true (used by the
         // viewer for PDFs) serves it for display instead of as an attachment.
-        api.MapGet("/drawings/{id:long}/file", DownloadFile);
+        // Inline (a PDF shown in the viewer) is viewing; the attachment download is what
+        // the legacy "Εκτύπωση" right covers — the web app prints only via the downloaded file.
+        api.MapGet("/drawings/{id:long}/file", (long id, ClaimsPrincipal user, IDrawingStore store, CancellationToken ct, bool inline = false)
+            => inline || AppRights.Has(user, AppRights.Print)
+                ? DownloadFile(id, store, ct, inline)
+                : Task.FromResult(Results.Forbid()));
 
-        api.MapPost("/drawings", Import);
+        api.MapPost("/drawings", Import).RequireAuthorization(AppRights.Scan);
 
         api.MapPut("/drawings/{id:long}", async (long id, ImportMeta meta, ClaimsPrincipal user,
             IDrawingStore store, CancellationToken ct) =>
@@ -47,7 +53,7 @@ public static class DrawingEndpoints
                 return Results.NotFound();
             Log.Information("Drawing {Id} metadata updated by {User}", id, user.Identity?.Name);
             return Results.Ok();
-        });
+        }).RequireAuthorization(AppRights.Edit);
 
         api.MapDelete("/drawings/{id:long}", async (long id, ClaimsPrincipal user,
             IDrawingStore store, CancellationToken ct) =>
@@ -56,7 +62,7 @@ public static class DrawingEndpoints
                 return Results.NotFound();
             Log.Warning("Drawing {Id} soft-deleted by {User}", id, user.Identity?.Name);
             return Results.Ok();
-        });
+        }).RequireAuthorization(AppRights.Edit);
 
         return api;
     }

@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { LoadingBlock } from '../components/Loading'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { addLookup, deleteLookup, getLookups, updateLookup, type LookupType } from '../api/api'
+import { addLookup, deleteLookup, getLookups, hasRight, updateLookup, type LookupType, type UserInfo } from '../api/api'
+import { StatusPage } from './StatusPage'
 import type { Lookup } from '../api/types'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -13,6 +15,27 @@ const LISTS: { type: LookupType; title: string }[] = [
 ]
 
 export default function LookupsPage() {
+  const user = useOutletContext<UserInfo>()
+  // The nav link is hidden without ADMIN; this covers a typed/bookmarked URL.
+  if (!hasRight(user, 'ADMIN')) return <NoAccess />
+  return <LookupsAdmin />
+}
+
+function NoAccess() {
+  const navigate = useNavigate()
+  return (
+    <StatusPage
+      code="403"
+      title="Δεν έχετε πρόσβαση"
+      message="Η συντήρηση των λιστών επιλογών είναι διαθέσιμη μόνο στους διαχειριστές της εφαρμογής."
+    >
+      <button className="primary" onClick={() => navigate('/drawings')}>Λίστα σχεδίων</button>
+      <button onClick={() => navigate('/')}>Αρχική</button>
+    </StatusPage>
+  )
+}
+
+function LookupsAdmin() {
   const [selected, setSelected] = useState<LookupType>('eidos')
   const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: ({ signal }) => getLookups(signal), staleTime: Infinity })
   const lk = lookupsQuery.data

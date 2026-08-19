@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Skeleton, Spinner } from './components/Loading'
-import { formatDate, getLookups, searchDrawings, type Sort } from './api/api'
+import { formatDate, getLookups, hasRight, searchDrawings, type Sort, type UserInfo } from './api/api'
 import { emptyFilters, type Filters } from './api/types'
 import ComboSelect from './components/ComboSelect'
 import ImportForm from './components/ImportForm'
@@ -61,8 +61,10 @@ export default function App() {
     setPage(1)
     try { localStorage.setItem(PAGE_SIZE_KEY, String(n)) } catch { /* ignore */ }
   }
-  const [showImport, setShowImport] = useState(params.get('import') === '1')
-  const [showMassImport, setShowMassImport] = useState(params.get('import') === 'mass')
+  const user = useOutletContext<UserInfo>()
+  const canScan = hasRight(user, 'SCAN')
+  const [showImport, setShowImport] = useState(canScan && params.get('import') === '1')
+  const [showMassImport, setShowMassImport] = useState(canScan && params.get('import') === 'mass')
 
   // Writes filters/sort/page back to the URL. `replace` so tweaking filters doesn't
   // pile up history entries — Back goes to the previous *page*, not the previous filter.
@@ -121,10 +123,12 @@ export default function App() {
     <>
       <div className="list-head">
         <h2 className="page-title">Σχέδια</h2>
-        <span className="list-head-actions">
-          <button onClick={() => setShowMassImport(true)}>Μαζική καταχώριση</button>{' '}
-          <button className="primary" onClick={() => setShowImport(true)}>+ Καταχώριση σχεδίου</button>
-        </span>
+        {canScan && (
+          <span className="list-head-actions">
+            <button onClick={() => setShowMassImport(true)}>Μαζική καταχώριση</button>{' '}
+            <button className="primary" onClick={() => setShowImport(true)}>+ Καταχώριση σχεδίου</button>
+          </span>
+        )}
       </div>
       <section className="card filters">
         <div className="filters-title">Αναζήτηση</div>
@@ -259,10 +263,10 @@ export default function App() {
         </div>
       )}
 
-      {showImport && lookups && (
+      {canScan && showImport && lookups && (
         <ImportForm lookups={lookups} onClose={() => setShowImport(false)} />
       )}
-      {showMassImport && lookups && (
+      {canScan && showMassImport && lookups && (
         <MassImportForm lookups={lookups} onClose={() => setShowMassImport(false)} />
       )}
     </>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { logout, type UserInfo } from '../api/api'
+import { APP_RIGHTS, hasRight, logout, type UserInfo } from '../api/api'
 import { APP_VERSION } from '../version'
 
 export default function Layout() {
@@ -47,7 +47,7 @@ export default function Layout() {
         <nav className="nav">
           <NavLink to="/" end>Αρχική</NavLink>
           <NavLink to="/drawings">Σχέδια</NavLink>
-          <NavLink to="/lookups">Λίστες επιλογών</NavLink>
+          {hasRight(user, 'ADMIN') && <NavLink to="/lookups">Λίστες επιλογών</NavLink>}
           <NavLink to="/manual">Οδηγίες</NavLink>
         </nav>
         <div className="appbar-right" ref={menuRef}>
@@ -67,6 +67,21 @@ export default function Layout() {
               <div className="user-menu-head">
                 <strong>{user.fullName || user.username}</strong>
                 {user.fullName && user.fullName !== user.username && <span>{user.username}</span>}
+              </div>
+              {/* Rights as granted in MIS (ADMIN implies the rest): ✓ = has it, dimmed = not. */}
+              <div className="user-menu-rights" aria-label="Δικαιώματα">
+                <div className="user-menu-rights-title">Δικαιώματα</div>
+                <ul>
+                  {APP_RIGHTS.map((r) => {
+                    const ok = hasRight(user, r.right)
+                    return (
+                      <li key={r.right} className={ok ? 'granted' : 'missing'} title={ok ? 'Έχετε αυτό το δικαίωμα' : 'Δεν έχετε αυτό το δικαίωμα'}>
+                        <span className="right-mark" aria-hidden="true">{ok ? '✓' : '–'}</span>
+                        {r.label}
+                      </li>
+                    )
+                  })}
+                </ul>
               </div>
               <button role="menuitem" onClick={() => { setMenuOpen(false); navigate('/change-password') }}>
                 Αλλαγή κωδικού
