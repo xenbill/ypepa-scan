@@ -11,9 +11,7 @@ export interface LookupData {
   kathgoriaErg: Lookup[]
   ypokatErg: Lookup[]
   xorosApoth: Lookup[]
-  /** COMMON.G11HAF_STRUCTURE (HSTR_ID / TITLE) */
-  monada: Lookup[]
-  /** Subset of monada with at least one live drawing — search filter only */
+  /** Units (COMMON.G11HAF_STRUCTURE) with at least one live drawing — search filter only */
   monadaInUse: Lookup[]
   /** Top-level Μονάδες only — offered on create/edit (see monadaForEdit) */
   monadaEdit: Lookup[]
@@ -96,15 +94,14 @@ export interface ViewInfo {
 }
 
 /**
- * Options for the Μονάδα dropdown on create/edit: the top-level Μονάδες, plus
- * the record's current unit when it is not one of them (old rows may point at
- * a sub-unit) so editing never silently drops it.
+ * Options for the Μονάδα dropdown on create/edit: the top-level Μονάδες, plus the
+ * record's current unit when it is not one of them (old rows may point at a
+ * sub-unit) so editing never silently drops it. The current unit comes from the
+ * drawing row itself (hstrId + joined name) — the full structure is not sent.
  */
-export function monadaForEdit(lookups: LookupData, currentId?: string | number | null): Lookup[] {
+export function monadaForEdit(lookups: LookupData, current?: { hstrId: number | null; monada: string | null } | null): Lookup[] {
   const list = lookups.monadaEdit
-  if (currentId == null || currentId === '') return list
-  const id = Number(currentId)
-  if (list.some((m) => m.id === id)) return list
-  const cur = lookups.monada.find((m) => m.id === id)
-  return cur ? [...list, cur] : list
+  if (!current || current.hstrId == null) return list
+  if (list.some((m) => m.id === current.hstrId)) return list
+  return [...list, { id: current.hstrId, name: current.monada ?? `#${current.hstrId}`, parentId: null }]
 }

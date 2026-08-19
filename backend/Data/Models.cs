@@ -7,13 +7,13 @@ public record LookupData(
     IReadOnlyList<Lookup> KathgoriaErg,
     IReadOnlyList<Lookup> YpokatErg,
     IReadOnlyList<Lookup> XorosApoth,
-    IReadOnlyList<Lookup> Monada,
-    /// <summary>Subset of Monada referenced by at least one live drawing (search filter only).</summary>
+    /// <summary>Units (COMMON.G11HAF_STRUCTURE) referenced by at least one live drawing — search filter only.</summary>
     IReadOnlyList<Lookup> MonadaInUse,
     /// <summary>
     /// Units offered when creating/editing a drawing: top-level Μονάδες only
     /// (HSTR_ID = MONADA, not the 999990 placeholder, Greek locations) — same
-    /// rule as the legacy app. Display/search still use the full Monada list.
+    /// rule as the legacy app. The full structure is never sent to the client: rows
+    /// carry their unit name already joined, and the search filter uses MonadaInUse.
     /// </summary>
     IReadOnlyList<Lookup> MonadaEdit);
 

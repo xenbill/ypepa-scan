@@ -41,11 +41,8 @@ public sealed class OracleDrawingStore : IDrawingStore
         var xoros = (await con.QueryAsync<(long, string)>(
             $"select XOROS_APOTH_ID, PERIGRAFH from {_owner}.C16PE_XOROS_APOTH_SXED order by PERIGRAFH"))
             .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
-        // Μονάδα: HAF unit structure shared with the Filippos apps.
-        var monada = (await con.QueryAsync<(long, string)>(
-            $"select HSTR_ID, TITLE from {_commonOwner}.G11HAF_STRUCTURE order by TITLE"))
-            .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
-        // Search filter shows only units that actually have (non-deleted) drawings.
+        // Μονάδα: HAF unit structure shared with the Filippos apps. Search filter
+        // shows only units that actually have (non-deleted) drawings.
         var monadaInUse = (await con.QueryAsync<(long, string)>(
             $@"select h.HSTR_ID, h.TITLE from {_commonOwner}.G11HAF_STRUCTURE h
                where exists (select 1 from {_owner}.C16PE_SXEDIO s
@@ -62,7 +59,7 @@ public sealed class OracleDrawingStore : IDrawingStore
                  and l.COUNTRY_ID = 24067
                order by h.TITLE"))
             .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
-        return new LookupData(eidos, kathg, ypokat, xoros, monada, monadaInUse, monadaEdit);
+        return new LookupData(eidos, kathg, ypokat, xoros, monadaInUse, monadaEdit);
     }
 
     private string BaseSelect => $@"

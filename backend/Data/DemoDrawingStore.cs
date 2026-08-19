@@ -79,7 +79,7 @@ public sealed class DemoDrawingStore : IDrawingStore
         var used = db.Drawings.Where(d => !d.Deleted && d.HstrId is not null).Select(d => d.HstrId!.Value).ToHashSet();
         var monadaInUse = db.Monada.Where(m => used.Contains(m.Id)).ToList();
         var monadaEdit = db.Monada.Where(m => db.MonadaEditIds.Contains(m.Id)).ToList();
-        return Task.FromResult(new LookupData(db.EidosSxed, db.KathgoriaErg, db.YpokatErg, db.XorosApoth, db.Monada, monadaInUse, monadaEdit));
+        return Task.FromResult(new LookupData(db.EidosSxed, db.KathgoriaErg, db.YpokatErg, db.XorosApoth, monadaInUse, monadaEdit));
     }
 
     private DrawingRow ToRow(DemoDb db, DemoRow d)

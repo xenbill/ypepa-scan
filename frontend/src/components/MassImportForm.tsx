@@ -327,7 +327,7 @@ function summarize(m: MetaFields, lookups: LookupData): string {
   if (m.kodikosErg) parts.push(m.kodikosErg)
   if (m.kathgId) parts.push(lookupName(lookups.kathgoriaErg, m.kathgId))
   if (m.ypokatId) parts.push(lookupName(lookups.ypokatErg, m.ypokatId))
-  if (m.hstrId) parts.push(lookupName(lookups.monada, m.hstrId))
+  if (m.hstrId) parts.push(lookupName(lookups.monadaEdit, m.hstrId))
   if (m.titlosErg) parts.push(m.titlosErg)
   if (m.titlosSxed) parts.push(m.titlosSxed)
   if (m.xorosId) parts.push(lookupName(lookups.xorosApoth, m.xorosId))
@@ -487,7 +487,7 @@ function MetaFieldsEditor({ value, onChange, lookups, ypokatOptions, placeholder
           <tr>
             <th>Μονάδα</th>
             <td>
-              <ComboSelect options={monadaForEdit(lookups)} value={value.hstrId} allLabel={inherit(lookups.monada, 'hstrId')}
+              <ComboSelect options={monadaForEdit(lookups)} value={value.hstrId} allLabel={inherit(lookups.monadaEdit, 'hstrId')}
                            onChange={(id) => set({ hstrId: id })} />
             </td>
             <th>Υπομονάδα</th>
