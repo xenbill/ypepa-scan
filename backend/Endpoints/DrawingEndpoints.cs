@@ -34,7 +34,8 @@ public static class DrawingEndpoints
             }
         });
 
-        // Original file download, streamed straight from the store.
+        // Original file, streamed straight from the store. ?inline=true (used by the
+        // viewer for PDFs) serves it for display instead of as an attachment.
         api.MapGet("/drawings/{id:long}/file", DownloadFile);
 
         api.MapPost("/drawings", Import);
@@ -60,7 +61,7 @@ public static class DrawingEndpoints
         return api;
     }
 
-    private static async Task<IResult> DownloadFile(long id, IDrawingStore store, CancellationToken ct)
+    private static async Task<IResult> DownloadFile(long id, IDrawingStore store, CancellationToken ct, bool inline = false)
     {
         var opened = await store.OpenFileAsync(id, ct);
         if (opened is null) return Results.NotFound();
@@ -81,9 +82,14 @@ public static class DrawingEndpoints
             "zip" => (".zip", "application/zip"),
             _ => (".bin", "application/octet-stream"),
         };
+        // Range support matters for inline PDFs: the browser's PDF viewer fetches pages
+        // on demand instead of downloading the whole scan first. Both store streams
+        // are seekable (OracleBlob = random-access LOB reads), so this costs nothing.
+        if (inline)
+            return Results.Stream(opened.Value.Stream, mime, enableRangeProcessing: true);
         var name = (row?.ArithmosSxed is { Length: > 0 } a ? a : $"sxedio-{id}") + ext;
         foreach (var c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
-        return Results.Stream(opened.Value.Stream, mime, name, enableRangeProcessing: false);
+        return Results.Stream(opened.Value.Stream, mime, name, enableRangeProcessing: true);
     }
 
     private static async Task<IResult> Import(HttpRequest req, ClaimsPrincipal user, IDrawingStore store, CancellationToken ct)

@@ -10,8 +10,9 @@ public record ViewInfo(string Type, string Url, string ThumbUrl, int? Width, int
 /// <summary>
 /// Prepares drawings for in-browser viewing. TIFFs (and other images) become
 /// Deep Zoom (DZI) tile pyramids via libvips — the only sane way to show a
-/// 10000x15000 scan in a browser. PDFs are served as-is (browsers render those natively).
-/// Results are cached on disk per drawing id; generation runs once, ever.
+/// 10000x15000 scan in a browser. Pyramids are cached on disk per drawing id;
+/// generation runs once, ever. PDFs never touch the cache: browsers render them
+/// natively, so they are streamed straight from the store (with Range support).
 /// </summary>
 public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILogger<TileService> log)
 {
@@ -30,8 +31,13 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
     {
         if (ReadMeta(id) is { } cached)
         {
-            Touch(id); // record use for LRU eviction
-            return cached;
+            if (cached.Type != "pdf")
+            {
+                Touch(id); // record use for LRU eviction
+                return cached;
+            }
+            // Legacy entry from when PDFs were copied into the cache; drop it and fall through.
+            try { Directory.Delete(Dir(id), recursive: true); } catch { /* best effort */ }
         }
 
         var gate = _locks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1));
@@ -43,24 +49,34 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
 
             var opened = await store.OpenFileAsync(id, ct);
             if (opened is null) return null;
+            await using var src = opened.Value.Stream;
 
-            Directory.CreateDirectory(Dir(id));
-            var originalPath = Path.Combine(Dir(id), "original.bin");
-            await using (var src = opened.Value.Stream)
-            await using (var dst = new FileStream(originalPath, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20, useAsync: true))
-                await src.CopyToAsync(dst, ct);
-
-            var type = FileTypes.Sniff(originalPath);
+            // Sniff from the store stream itself (seekable in both stores) so PDFs
+            // are decided without ever being copied to disk.
+            var head = new byte[FileTypes.HeadLength];
+            var n = await src.ReadAsync(head, ct);
+            var type = FileTypes.Sniff(head.AsSpan(0, n));
             if (!FileTypes.IsSupported(type))
             {
-                File.Delete(originalPath);
                 log.LogWarning("Drawing {Id}: unsupported file type '{Type}', cannot view", id, type);
                 throw new UnsupportedFileException(type, FileTypes.UnsupportedMessage(type));
             }
+            if (type == "pdf")
+            {
+                log.LogInformation("Drawing {Id}: PDF, served directly from the store", id);
+                return new ViewInfo("pdf", $"/api/drawings/{id}/file?inline=true", "", null, null);
+            }
+            src.Seek(0, SeekOrigin.Begin);
+
+            Directory.CreateDirectory(Dir(id));
+            var originalPath = Path.Combine(Dir(id), "original.bin");
+            await using (var dst = new FileStream(originalPath, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20, useAsync: true))
+                await src.CopyToAsync(dst, ct);
+
             ViewInfo info;
             try
             {
-                info = type == "pdf" ? PreparePdf(id, originalPath) : PrepareDzi(id, originalPath);
+                info = PrepareDzi(id, originalPath);
             }
             catch (VipsException e)
             {
@@ -72,8 +88,8 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
             }
 
             // The blob copy was only needed as vips input; keeping it would roughly
-            // double the cache footprint. (PreparePdf already moved it away.)
-            if (File.Exists(originalPath)) File.Delete(originalPath);
+            // double the cache footprint.
+            File.Delete(originalPath);
 
             // Atomic publish: readers must never see a half-written meta.json.
             var tmp = MetaPath(id) + ".tmp";
@@ -166,14 +182,6 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
         {
             return null;
         }
-    }
-
-    private ViewInfo PreparePdf(long id, string originalPath)
-    {
-        var pdfPath = Path.Combine(Dir(id), "original.pdf");
-        File.Move(originalPath, pdfPath, overwrite: true);
-        log.LogInformation("Drawing {Id}: PDF, served natively", id);
-        return new ViewInfo("pdf", $"/tiles/{id}/original.pdf", "", null, null);
     }
 
     private ViewInfo PrepareDzi(long id, string originalPath)

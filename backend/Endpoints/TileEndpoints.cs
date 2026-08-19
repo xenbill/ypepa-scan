@@ -4,7 +4,7 @@ using Sxedia.Web.Imaging;
 namespace Sxedia.Web.Endpoints;
 
 /// <summary>
-/// Serves the tile cache (DZI descriptors + tiles, thumbnails, cached PDFs)
+/// Serves the tile cache (DZI descriptors + tiles, thumbnails)
 /// as an authorized endpoint instead of anonymous static files, so drawings
 /// are only visible to logged-in users. The browser sends the auth cookie on
 /// these requests automatically (img, iframe, OpenSeadragon tile loads).
