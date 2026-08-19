@@ -37,7 +37,7 @@ export default function Layout() {
     <>
       <header className="appbar">
         <Link to="/" className="brand" title="Αρχική">
-          <span className="brand-mark">ΣΥ</span>
+          <span className="brand-mark"><img src="/ypepa-emblem.png" alt="ΥΠΕΠΑ" /></span>
           <div>
             <h1>Σχέδια ΥΠΕΠΑ</h1>
             <span className="brand-sub">ΑΡΧΕΙΟ ΤΕΧΝΙΚΩΝ ΣΧΕΔΙΩΝ</span>

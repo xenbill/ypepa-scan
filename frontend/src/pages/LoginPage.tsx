@@ -48,8 +48,13 @@ export default function LoginPage() {
         <circle cx="290" cy="420" r="4" fill="#ffffff" fillOpacity="0.12" />
       </svg>
       <div className="login-box">
-        <h1>Σχέδια ΥΠΕΠΑ</h1>
-        <p className="login-note">Αρχείο τεχνικών σχεδίων — συνδεθείτε για να συνεχίσετε.</p>
+        <div className="login-head">
+          <img className="login-emblem" src="/ypepa-emblem.png" alt="ΥΠΕΠΑ" />
+          <div>
+            <h1>Σχέδια ΥΠΕΠΑ</h1>
+            <p className="login-note">Αρχείο τεχνικών σχεδίων — συνδεθείτε για να συνεχίσετε.</p>
+          </div>
+        </div>
         <form onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
           <label>{misLogin ? 'ΑΜΑ' : 'Όνομα χρήστη'}
             <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="username" />
