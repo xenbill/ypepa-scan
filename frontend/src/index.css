@@ -89,20 +89,21 @@ small { color: var(--ink-soft); }
 .appbar-right { position: relative; display: flex; align-items: center; color: #b9c9db; font-size: 13px; }
 .user-menu-btn {
   display: flex; align-items: center; gap: 8px;
-  background: transparent; color: #c6d1e0; border: 1px solid rgba(255, 255, 255, 0.35);
-  padding: 4px 10px 4px 5px;
+  background: transparent; color: #c6d1e0; border: 1px solid transparent;
+  padding: 4px 8px 4px 5px;
 }
 .user-menu-btn strong { color: #fff; }
-.user-menu-btn:hover, .user-menu-btn.open {
-  background: var(--blueprint-soft); border-color: rgba(255, 255, 255, 0.6); color: #fff;
+.user-menu-btn:hover, .user-menu-btn.open, .user-menu-btn:focus {
+  background: var(--blueprint-soft); color: #fff; border-color: transparent; box-shadow: none;
 }
 .user-avatar {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; border-radius: 50%;
   background: rgba(255, 255, 255, 0.18); color: #fff;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+  font-size: 11px; font-weight: 700; line-height: 1; padding: 0; text-align: center;
+  font-family: "Segoe UI", system-ui, sans-serif;
 }
-.user-caret { font-size: 10px; opacity: 0.8; }
+.user-caret { font-size: 18px; line-height: 1; opacity: 0.85; margin-left: -2px; }
 .user-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
   min-width: 200px; padding: 6px;
