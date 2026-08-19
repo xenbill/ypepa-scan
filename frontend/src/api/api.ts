@@ -91,7 +91,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
 // ---- drawings --------------------------------------------------------------
 export const getLookups = (signal?: AbortSignal) => getJson<LookupData>('/api/lookups', signal)
 
-export interface StatItem { name: string; count: number }
+export interface StatItem { name: string; count: number; /** lookup id to filter the list by; null = drawings without a value */ id: number | null }
 export interface ArchiveStats { total: number; perKathgoria: StatItem[]; perEidos: StatItem[]; perMonada: StatItem[] }
 export const getStats = (signal?: AbortSignal) => getJson<ArchiveStats>('/api/stats', signal)
 

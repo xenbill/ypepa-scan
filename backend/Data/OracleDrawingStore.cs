@@ -306,24 +306,24 @@ public sealed class OracleDrawingStore : IDrawingStore
         await using var con = Open();
         var total = await con.ExecuteScalarAsync<int>(new CommandDefinition(
             $"select count(*) from {_owner}.C16PE_SXEDIO s where nvl(s.DELETED, 0) = 0", cancellationToken: ct));
-        var perKathg = (await con.QueryAsync<(string?, int)>(new CommandDefinition(
-            $@"select k.PERIGRAFH, count(*) from {_owner}.C16PE_SXEDIO s
+        var perKathg = (await con.QueryAsync<(string?, int, long?)>(new CommandDefinition(
+            $@"select k.PERIGRAFH, count(*), s.KATHG_ERG_ID from {_owner}.C16PE_SXEDIO s
                left join {_owner}.C16PE_KATHGORIA_ERG k on k.KATHG_ERG_ID = s.KATHG_ERG_ID
                where nvl(s.DELETED, 0) = 0
-               group by k.PERIGRAFH order by count(*) desc", cancellationToken: ct)))
-            .Select(t => new StatItem(t.Item1 ?? "— χωρίς κατηγορία —", t.Item2)).ToList();
-        var perEidos = (await con.QueryAsync<(string?, int)>(new CommandDefinition(
-            $@"select e.PERIGRAFH, count(*) from {_owner}.C16PE_SXEDIO s
+               group by k.PERIGRAFH, s.KATHG_ERG_ID order by count(*) desc", cancellationToken: ct)))
+            .Select(t => new StatItem(t.Item1 ?? "— χωρίς κατηγορία —", t.Item2, t.Item3)).ToList();
+        var perEidos = (await con.QueryAsync<(string?, int, long?)>(new CommandDefinition(
+            $@"select e.PERIGRAFH, count(*), s.EIDOS_SXED_ID from {_owner}.C16PE_SXEDIO s
                left join {_owner}.C16PE_EIDOS_SXED e on e.EIDOS_SXED_ID = s.EIDOS_SXED_ID
                where nvl(s.DELETED, 0) = 0
-               group by e.PERIGRAFH order by count(*) desc", cancellationToken: ct)))
-            .Select(t => new StatItem(t.Item1 ?? "— χωρίς είδος —", t.Item2)).ToList();
-        var perMonada = (await con.QueryAsync<(string?, int)>(new CommandDefinition(
-            $@"select h.TITLE, count(*) from {_owner}.C16PE_SXEDIO s
+               group by e.PERIGRAFH, s.EIDOS_SXED_ID order by count(*) desc", cancellationToken: ct)))
+            .Select(t => new StatItem(t.Item1 ?? "— χωρίς είδος —", t.Item2, t.Item3)).ToList();
+        var perMonada = (await con.QueryAsync<(string?, int, long?)>(new CommandDefinition(
+            $@"select h.TITLE, count(*), s.HSTR_ID from {_owner}.C16PE_SXEDIO s
                left join {_commonOwner}.G11HAF_STRUCTURE h on h.HSTR_ID = s.HSTR_ID
                where nvl(s.DELETED, 0) = 0
-               group by h.TITLE order by count(*) desc", cancellationToken: ct)))
-            .Select(t => new StatItem(t.Item1 ?? "— χωρίς μονάδα —", t.Item2)).ToList();
+               group by h.TITLE, s.HSTR_ID order by count(*) desc", cancellationToken: ct)))
+            .Select(t => new StatItem(t.Item1 ?? "— χωρίς μονάδα —", t.Item2, t.Item3)).ToList();
         return new ArchiveStats(total, perKathg, perEidos, perMonada);
     }
 

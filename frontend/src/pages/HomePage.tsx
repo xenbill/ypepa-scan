@@ -3,24 +3,39 @@ import { useQuery } from '@tanstack/react-query'
 import { getStats, type StatItem } from '../api/api'
 import { Skeleton, SkeletonLines } from '../components/Loading'
 
-/** Compact single-hue bar list: sorted desc, proportional bars, scrolls past ~8 rows. */
-function StatList({ title, items }: { title: string; items: StatItem[] }) {
+/** Compact single-hue bar list: sorted desc, proportional bars, scrolls past ~8 rows.
+    Each row links to the list filtered by that value (`param` = the list's URL key). */
+function StatList({ title, items, param }: { title: string; items: StatItem[]; param: 'kathg' | 'eidos' | 'hstr' }) {
+  const navigate = useNavigate()
   const max = Math.max(1, ...items.map((s) => s.count))
   return (
     <section className="card home-card">
       <h2>{title}</h2>
       <div className="stat-scroll">
-        {items.map((s) => (
-          <div key={s.name} className="stat-row" title={`${s.name}: ${s.count.toLocaleString('el-GR')}`}>
-            <div className="stat-row-line">
-              <span className="stat-name">{s.name}</span>
-              <span className="stat-count">{s.count.toLocaleString('el-GR')}</span>
-            </div>
-            <div className="stat-bar-track">
-              <div className="stat-bar-fill" style={{ width: `${(s.count / max) * 100}%` }} />
-            </div>
-          </div>
-        ))}
+        {items.map((s) => {
+          const href = s.id != null ? `/sxedia?${param}=${s.id}` : null
+          const body = (
+            <>
+              <div className="stat-row-line">
+                <span className="stat-name">{s.name}</span>
+                <span className="stat-count">{s.count.toLocaleString('el-GR')}</span>
+              </div>
+              <div className="stat-bar-track">
+                <div className="stat-bar-fill" style={{ width: `${(s.count / max) * 100}%` }} />
+              </div>
+            </>
+          )
+          const label = `${s.name}: ${s.count.toLocaleString('el-GR')}`
+          // Drawings without a value (id null) can't be filtered for; plain row.
+          return href ? (
+            <a key={s.name} className="stat-row stat-link" href={href} title={`${label} — προβολή στη λίστα`}
+               onClick={(e) => { e.preventDefault(); navigate(href) }}>
+              {body}
+            </a>
+          ) : (
+            <div key={s.name} className="stat-row" title={label}>{body}</div>
+          )
+        })}
       </div>
     </section>
   )
@@ -82,9 +97,9 @@ export default function HomePage() {
       </section>
       {stats.data ? (
         <>
-          <StatList title="Ανά κατηγορία έργου" items={stats.data.perKathgoria} />
-          <StatList title="Ανά είδος σχεδίου" items={stats.data.perEidos} />
-          <StatList title="Ανά μονάδα" items={stats.data.perMonada} />
+          <StatList title="Ανά κατηγορία έργου" items={stats.data.perKathgoria} param="kathg" />
+          <StatList title="Ανά είδος σχεδίου" items={stats.data.perEidos} param="eidos" />
+          <StatList title="Ανά μονάδα" items={stats.data.perMonada} param="hstr" />
         </>
       ) : stats.isError ? (
         <p className="status-err">Σφάλμα: {(stats.error as Error).message}</p>

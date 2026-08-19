@@ -100,7 +100,8 @@ public interface IDrawingStore
     Task<bool> DeleteLookupAsync(string type, long id, CancellationToken ct = default);
 }
 
-public record StatItem(string Name, int Count);
+/// <summary>Id is the lookup id to filter the list by; null for drawings without a value.</summary>
+public record StatItem(string Name, int Count, long? Id = null);
 public record ArchiveStats(
     int Total,
     IReadOnlyList<StatItem> PerKathgoria,

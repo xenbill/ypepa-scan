@@ -230,12 +230,13 @@ public sealed class DemoDrawingStore : IDrawingStore
         var db = Load();
         var live = db.Drawings.Where(d => !d.Deleted).ToList();
         string Name(List<Lookup> l, long? id) => l.FirstOrDefault(x => x.Id == id)?.Name ?? "—";
-        var perKathg = live.GroupBy(d => Name(db.KathgoriaErg, d.KathgId))
-            .Select(g => new StatItem(g.Key, g.Count())).OrderByDescending(s => s.Count).ToList();
-        var perEidos = live.GroupBy(d => Name(db.EidosSxed, d.EidosId))
-            .Select(g => new StatItem(g.Key, g.Count())).OrderByDescending(s => s.Count).ToList();
-        var perMonada = live.GroupBy(d => Name(db.Monada, d.HstrId))
-            .Select(g => new StatItem(g.Key, g.Count())).OrderByDescending(s => s.Count).ToList();
+        List<StatItem> Group(List<Lookup> l, Func<DemoRow, long?> key) => live
+            .GroupBy(key)
+            .Select(g => new StatItem(Name(l, g.Key), g.Count(), g.Key))
+            .OrderByDescending(s => s.Count).ToList();
+        var perKathg = Group(db.KathgoriaErg, d => d.KathgId);
+        var perEidos = Group(db.EidosSxed, d => d.EidosId);
+        var perMonada = Group(db.Monada, d => d.HstrId);
         return Task.FromResult(new ArchiveStats(live.Count, perKathg, perEidos, perMonada));
     }
 
