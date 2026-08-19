@@ -78,7 +78,7 @@ export default function App() {
   }
   const setPage = (p: number) => writeListState({ page: p })
   const openDrawing = (id: number) =>
-    navigate(`/sxedio/${id}`, { state: { from: location.search } })
+    navigate(`/drawings/${id}`, { state: { from: location.search } })
 
   const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: ({ signal }) => getLookups(signal), staleTime: Infinity })
   const lookups = lookupsQuery.data
@@ -207,7 +207,7 @@ export default function App() {
                 <tr key={d.sxedioId}>
                   <td className="mono">{d.kodikosErg}</td>
                   <td>
-                    <a className="mono" href={`/sxedio/${d.sxedioId}`}
+                    <a className="mono" href={`/drawings/${d.sxedioId}`}
                        onClick={(e) => { e.preventDefault(); openDrawing(d.sxedioId) }}>
                       {d.arithmosSxed || '—'}
                     </a>

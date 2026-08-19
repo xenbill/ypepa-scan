@@ -43,7 +43,7 @@ export function NotFoundPage({ what }: { what?: string }) {
       title={what ? `${what} δεν βρέθηκε` : 'Η σελίδα δεν βρέθηκε'}
       message="Η διεύθυνση μπορεί να είναι λάθος, ή το στοιχείο να έχει διαγραφεί."
     >
-      <button className="primary" onClick={() => navigate('/sxedia')}>Λίστα σχεδίων</button>
+      <button className="primary" onClick={() => navigate('/drawings')}>Λίστα σχεδίων</button>
       <button onClick={() => navigate('/')}>Αρχική</button>
     </StatusPage>
   )

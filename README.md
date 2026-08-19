@@ -31,8 +31,8 @@ solution `Mis.YpepaScan.slnx`. Deployed DLL: `Mis.YpepaScan.Web.dll` (see
 |---|---|
 | `/login` | Login (username = ΑΜΑ, password, κατηγορία προσωπικού when the MIS backend is active) |
 | `/` | Home: counts per category / type / unit — each row links to the filtered list |
-| `/sxedia` | Drawing list: filters, sort, page, page size (10/20/50/100, remembered) all live in the URL so Back/close return to the same list |
-| `/sxedio/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
+| `/drawings` | Drawing list: filters, sort, page, page size (10/20/50/100, remembered) all live in the URL so Back/close return to the same list |
+| `/drawings/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
 | `/lookups` | Maintain lookup tables (categories, types, …) |
 | `/change-password` | Change password (MIS service or dev store) |
 | `*` | Proper 404 / error pages |

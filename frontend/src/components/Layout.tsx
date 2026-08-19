@@ -45,7 +45,7 @@ export default function Layout() {
         </Link>
         <nav className="nav">
           <NavLink to="/" end>Αρχική</NavLink>
-          <NavLink to="/sxedia">Σχέδια</NavLink>
+          <NavLink to="/drawings">Σχέδια</NavLink>
           <NavLink to="/lookups">Λίστες επιλογών</NavLink>
         </nav>
         <div className="appbar-right" ref={menuRef}>

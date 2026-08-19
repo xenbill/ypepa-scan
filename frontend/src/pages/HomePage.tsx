@@ -13,7 +13,7 @@ function StatList({ title, items, param }: { title: string; items: StatItem[]; p
       <h2>{title}</h2>
       <div className="stat-scroll">
         {items.map((s) => {
-          const href = s.id != null ? `/sxedia?${param}=${s.id}` : null
+          const href = s.id != null ? `/drawings?${param}=${s.id}` : null
           const body = (
             <>
               <div className="stat-row-line">
@@ -89,9 +89,9 @@ export default function HomePage() {
             Αναζητήστε και προβάλετε τα αρχειοθετημένα σχέδια ή καταχωρίστε νέα.
           </p>
           <div className="hero-actions">
-            <button className="primary" onClick={() => navigate('/sxedia')}>Άνοιγμα λίστας σχεδίων</button>
-            <button onClick={() => navigate('/sxedia?import=1')}>+ Καταχώριση σχεδίου</button>
-            <button onClick={() => navigate('/sxedia?import=mass')}>Μαζική καταχώριση</button>
+            <button className="primary" onClick={() => navigate('/drawings')}>Άνοιγμα λίστας σχεδίων</button>
+            <button onClick={() => navigate('/drawings?import=1')}>+ Καταχώριση σχεδίου</button>
+            <button onClick={() => navigate('/drawings?import=mass')}>Μαζική καταχώριση</button>
           </div>
         </div>
         <HeroArt />

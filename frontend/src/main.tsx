@@ -76,7 +76,7 @@ function ViewerRoute() {
   // The list passes its query string in navigation state, so "Κλείσιμο" returns
   // to the same filtered/sorted page. Direct links (no state) just go to the list.
   const from = (location.state as { from?: string } | null)?.from ?? ''
-  return <Viewer id={numId} onClose={() => navigate('/sxedia' + from)} />
+  return <Viewer id={numId} onClose={() => navigate('/drawings' + from)} />
 }
 
 createRoot(document.getElementById('root')!).render(
@@ -89,13 +89,13 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<RequireAuth />}>
               <Route element={<Layout />}>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/sxedia" element={<App />} />
+                <Route path="/drawings" element={<App />} />
                 <Route path="/lookups" element={<LookupsPage />} />
                 <Route path="/change-password" element={<ChangePasswordPage />} />
                 {/* Unknown URL: a real 404 page (inside the app chrome) instead of a silent redirect. */}
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
-              <Route path="/sxedio/:id" element={<ViewerRoute />} />
+              <Route path="/drawings/:id" element={<ViewerRoute />} />
             </Route>
           </Routes>
         </ErrorBoundary>
