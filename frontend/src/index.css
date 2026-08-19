@@ -97,6 +97,9 @@ small { color: var(--ink-soft); }
   padding: 4px 8px 4px 5px;
 }
 .user-menu-btn strong { color: #fff; }
+/* Full MIS display name in the bar; clipped with an ellipsis so it can't crowd the nav. */
+.user-menu-name { max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 900px) { .user-menu-name { max-width: 160px; } }
 .user-menu-btn:hover, .user-menu-btn.open, .user-menu-btn:focus {
   background: var(--blueprint-soft); color: #fff; border-color: transparent; box-shadow: none;
 }
@@ -110,17 +113,12 @@ small { color: var(--ink-soft); }
 .user-caret { font-size: 18px; line-height: 1; opacity: 0.85; margin-left: -2px; }
 .user-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
-  min-width: 200px; padding: 6px;
+  min-width: 200px; width: max-content; max-width: 340px; padding: 6px;
   background: var(--card); color: var(--ink);
   border: 1px solid var(--border); border-radius: 3px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 }
-.user-menu-head {
-  display: flex; flex-direction: column; padding: 6px 10px 8px;
-  border-bottom: 1px solid var(--border-soft); margin-bottom: 4px;
-}
-.user-menu-head strong { color: var(--ink); font-size: 13px; }
-.user-menu-head span { color: var(--ink-soft); font-size: 12px; }
+@media (max-width: 420px) { .user-menu { max-width: calc(100vw - 24px); } }
 .user-menu button {
   display: block; width: 100%; text-align: left;
   background: transparent; border: 0; color: var(--ink);
@@ -129,7 +127,7 @@ small { color: var(--ink-soft); }
 .user-menu button:hover { background: var(--accent-wash); color: var(--accent-dark); }
 .user-menu button:disabled { opacity: 0.6; }
 .user-menu-rights {
-  padding: 4px 10px 8px; margin-bottom: 4px;
+  padding: 6px 10px 8px; margin-bottom: 4px;
   border-bottom: 1px solid var(--border-soft);
 }
 .user-menu-rights-title {

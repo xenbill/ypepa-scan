@@ -33,7 +33,7 @@ file static class AuthBackendHelpers
 }
 
 /// <summary>
-/// Dev-only credential check: Auth:Username / Auth:Password from config; once changed via
+/// Dev-only credential check: Auth:Username / Auth:Password (display name Auth:FullName) from config; once changed via
 /// the change-password page, the SHA-256 hash stored in auth.json takes precedence.
 /// </summary>
 public sealed class DevAuthBackend(IConfiguration cfg, IWebHostEnvironment env) : IAuthBackend
@@ -50,7 +50,9 @@ public sealed class DevAuthBackend(IConfiguration cfg, IWebHostEnvironment env) 
         var rights = AppRights.FromConfig(cfg); // Auth:Rights:{VIEW,SCAN,...} = true/false
         if (!rights.Contains(AppRights.View))
             return Task.FromResult(AuthResult.Fail(NoAccessMessage));
-        return Task.FromResult(AuthResult.Ok(new AuthUser(username, username, RoleOf(rights), null, rights)));
+        // Auth:FullName lets the demo show a realistic (long) MIS-style display name.
+        var fullName = cfg["Auth:FullName"] is { Length: > 0 } fn ? fn : username;
+        return Task.FromResult(AuthResult.Ok(new AuthUser(username, fullName, RoleOf(rights), null, rights)));
     }
 
     public Task<string?> ChangePasswordAsync(string username, int? category, string currentPassword, string newPassword, string userIp)

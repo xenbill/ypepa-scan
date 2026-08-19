@@ -40,8 +40,9 @@ solution `Mis.YpepaScan.slnx`. Deployed DLL: `Mis.YpepaScan.Web.dll` (see
 
 App bar: ΥΠΕΠΑ emblem (also the favicon), brand links home (tooltip shows the
 version), nav Αρχική / Σχέδια / Λίστες επιλογών (ADMIN only) / Οδηγίες, user
-dropdown (avatar + name) with the user's rights (✓ / dimmed, see «Application
-rights»), change password / logout / version (→ changelog).
+dropdown (avatar initials = surname + first name, full MIS display name clipped
+with an ellipsis) with the user's rights (✓ / dimmed, see «Application rights»),
+change password / logout / version (→ changelog).
 
 ## API
 
@@ -66,7 +67,8 @@ Two credential backends, selected at startup by `Auth:DevLogin`:
   προσωπικού dropdown fetched from the service; the chosen category is
   carried in the JWT. Password change goes through the same service.
 - **`true` (dev)** — `DevAuthBackend`: single user `Auth:Username`/`Auth:Password`
-  (default `dev`/`dev`); after a change-password the SHA-256 hash in `auth.json`
+  (default `dev`/`dev`, display name `Auth:FullName` — a long MIS-style name in
+  the Development settings so the user menu is exercised); after a change-password the SHA-256 hash in `auth.json`
   takes precedence. Its rights come from `Auth:Rights` (see below).
 
 ### Application rights

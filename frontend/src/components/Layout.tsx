@@ -56,18 +56,14 @@ export default function Layout() {
             onClick={() => setMenuOpen((o) => !o)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            title={user.fullName && user.fullName !== user.username ? user.fullName : undefined}
+            title={user.fullName || user.username}
           >
             <span className="user-avatar" aria-hidden="true">{initials(user)}</span>
-            <strong>{user.username}</strong>
+            <strong className="user-menu-name">{user.fullName || user.username}</strong>
             <span className="user-caret" aria-hidden="true">▾</span>
           </button>
           {menuOpen && (
             <div className="user-menu" role="menu">
-              <div className="user-menu-head">
-                <strong>{user.fullName || user.username}</strong>
-                {user.fullName && user.fullName !== user.username && <span>{user.username}</span>}
-              </div>
               {/* Rights as granted in MIS (ADMIN implies the rest): ✓ = has it, dimmed = not. */}
               <div className="user-menu-rights" aria-label="Δικαιώματα">
                 <div className="user-menu-rights-title">Δικαιώματα</div>
@@ -105,9 +101,14 @@ export default function Layout() {
   )
 }
 
+/** Avatar initials. MIS display names look like «Ανθλγός (ΜΧ) Παπαδόπουλος Κωνσταντίνος (12345)»:
+    drop the parenthesised parts (speciality, ΑΜΑ), then use surname + first name — the last
+    two words — so the rank is skipped. Two words → both; one word → its first two letters. */
 function initials(u: UserInfo): string {
-  const src = (u.fullName || u.username).trim()
+  const src = (u.fullName || u.username).replace(/\([^)]*\)/g, ' ').trim()
   const parts = src.split(/\s+/).filter(Boolean)
-  const s = parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : src.slice(0, 2)
+  const s = parts.length >= 2
+    ? parts[parts.length - 2][0] + parts[parts.length - 1][0]
+    : (parts[0] || u.username).slice(0, 2)
   return s.toUpperCase()
 }
