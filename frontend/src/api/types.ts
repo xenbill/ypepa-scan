@@ -1,4 +1,4 @@
-// Mirrors the C# DTOs in Sxedia.Web/Data/Models.cs (System.Text.Json camelCase).
+// Mirrors the C# DTOs in Mis.YpepaScan.Web/Data/Models.cs (System.Text.Json camelCase).
 
 export interface Lookup {
   id: number
@@ -84,7 +84,7 @@ export interface DrawingMeta {
   hstrId: number | null
 }
 
-/** Sxedia.Web/Imaging/TileService.cs ViewInfo */
+/** Mis.YpepaScan.Web/Imaging/TileService.cs ViewInfo */
 export interface ViewInfo {
   type: 'dzi' | 'pdf'
   url: string

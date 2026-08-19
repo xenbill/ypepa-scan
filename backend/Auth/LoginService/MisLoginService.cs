@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.Extensions.Options;
 
-namespace Sxedia.Web.Auth.LoginService;
+namespace Mis.YpepaScan.Web.Auth.LoginService;
 
 /// <summary>Bound from Auth:LoginService.</summary>
 public sealed class LoginServiceOptions

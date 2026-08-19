@@ -1,7 +1,7 @@
 using System.Text.Json;
 using NetVips;
 
-namespace Sxedia.Web.Data;
+namespace Mis.YpepaScan.Web.Data;
 
 /// <summary>
 /// Creates sample data for demo mode: lookup tables, a handful of drawing records

@@ -3,9 +3,9 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Sxedia.Web.Auth.LoginService;
+using Mis.YpepaScan.Web.Auth.LoginService;
 
-namespace Sxedia.Web.Auth;
+namespace Mis.YpepaScan.Web.Auth;
 
 public record LoginRequestDto(string Username, string Password, int? Category);
 public record ChangePasswordRequestDto(string CurrentPassword, string NewPassword);

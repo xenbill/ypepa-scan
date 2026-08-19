@@ -11,7 +11,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Sxedia.Web.Auth.LoginService
+namespace Mis.YpepaScan.Web.Auth.LoginService
 {
 
 
@@ -22,27 +22,27 @@ namespace Sxedia.Web.Auth.LoginService
 
     [System.ServiceModel.OperationContractAttribute(Action = "http://localhost/GetUsr", ReplyAction = "*")]
     [System.ServiceModel.XmlSerializerFormatAttribute(SupportFaults = true)]
-    System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.User> GetUsrAsync();
+    System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.User> GetUsrAsync();
 
     [System.ServiceModel.OperationContractAttribute(Action = "http://localhost/LogInPComp", ReplyAction = "*")]
     [System.ServiceModel.XmlSerializerFormatAttribute(SupportFaults = true)]
-    System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.User> LogInPCompAsync(int category, string ama, string password, string APP, bool B_DEBUG, string computername, string winuser, bool UsePComp);
+    System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.User> LogInPCompAsync(int category, string ama, string password, string APP, bool B_DEBUG, string computername, string winuser, bool UsePComp);
 
     [System.ServiceModel.OperationContractAttribute(Action = "http://localhost/LogIn", ReplyAction = "*")]
     [System.ServiceModel.XmlSerializerFormatAttribute(SupportFaults = true)]
-    System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.User> LogInAsync(int category, string ama, string password, string APP, bool B_DEBUG, string computername, string winuser);
+    System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.User> LogInAsync(int category, string ama, string password, string APP, bool B_DEBUG, string computername, string winuser);
 
     [System.ServiceModel.OperationContractAttribute(Action = "http://localhost/GetCategories", ReplyAction = "*")]
     [System.ServiceModel.XmlSerializerFormatAttribute(SupportFaults = true)]
-    System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.ArrayOfXElement> GetCategoriesAsync();
+    System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.ArrayOfXElement> GetCategoriesAsync();
 
     [System.ServiceModel.OperationContractAttribute(Action = "http://localhost/GetWebApps", ReplyAction = "*")]
     [System.ServiceModel.XmlSerializerFormatAttribute(SupportFaults = true)]
-    System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.ArrayOfXElement> GetWebAppsAsync();
+    System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.ArrayOfXElement> GetWebAppsAsync();
 
     [System.ServiceModel.OperationContractAttribute(Action = "http://localhost/GetNonWebApps", ReplyAction = "*")]
     [System.ServiceModel.XmlSerializerFormatAttribute(SupportFaults = true)]
-    System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.ArrayOfXElement> GetNonWebAppsAsync();
+    System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.ArrayOfXElement> GetNonWebAppsAsync();
 
     [System.ServiceModel.OperationContractAttribute(Action = "http://localhost/ChangePassPComp", ReplyAction = "*")]
     [System.ServiceModel.XmlSerializerFormatAttribute(SupportFaults = true)]
@@ -354,13 +354,13 @@ namespace Sxedia.Web.Auth.LoginService
   }
 
   [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Tools.ServiceModel.Svcutil", "2.0.3")]
-  public interface ServiceSoapChannel : Sxedia.Web.Auth.LoginService.ServiceSoap, System.ServiceModel.IClientChannel
+  public interface ServiceSoapChannel : Mis.YpepaScan.Web.Auth.LoginService.ServiceSoap, System.ServiceModel.IClientChannel
   {
   }
 
   [System.Diagnostics.DebuggerStepThroughAttribute()]
   [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Tools.ServiceModel.Svcutil", "2.0.3")]
-  public partial class ServiceSoapClient : System.ServiceModel.ClientBase<Sxedia.Web.Auth.LoginService.ServiceSoap>, Sxedia.Web.Auth.LoginService.ServiceSoap
+  public partial class ServiceSoapClient : System.ServiceModel.ClientBase<Mis.YpepaScan.Web.Auth.LoginService.ServiceSoap>, Mis.YpepaScan.Web.Auth.LoginService.ServiceSoap
   {
 
     /// <summary>
@@ -396,32 +396,32 @@ namespace Sxedia.Web.Auth.LoginService
     {
     }
 
-    public System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.User> GetUsrAsync()
+    public System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.User> GetUsrAsync()
     {
       return base.Channel.GetUsrAsync();
     }
 
-    public System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.User> LogInPCompAsync(int category, string ama, string password, string APP, bool B_DEBUG, string computername, string winuser, bool UsePComp)
+    public System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.User> LogInPCompAsync(int category, string ama, string password, string APP, bool B_DEBUG, string computername, string winuser, bool UsePComp)
     {
       return base.Channel.LogInPCompAsync(category, ama, password, APP, B_DEBUG, computername, winuser, UsePComp);
     }
 
-    public System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.User> LogInAsync(int category, string ama, string password, string APP, bool B_DEBUG, string computername, string winuser)
+    public System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.User> LogInAsync(int category, string ama, string password, string APP, bool B_DEBUG, string computername, string winuser)
     {
       return base.Channel.LogInAsync(category, ama, password, APP, B_DEBUG, computername, winuser);
     }
 
-    public System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.ArrayOfXElement> GetCategoriesAsync()
+    public System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.ArrayOfXElement> GetCategoriesAsync()
     {
       return base.Channel.GetCategoriesAsync();
     }
 
-    public System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.ArrayOfXElement> GetWebAppsAsync()
+    public System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.ArrayOfXElement> GetWebAppsAsync()
     {
       return base.Channel.GetWebAppsAsync();
     }
 
-    public System.Threading.Tasks.Task<Sxedia.Web.Auth.LoginService.ArrayOfXElement> GetNonWebAppsAsync()
+    public System.Threading.Tasks.Task<Mis.YpepaScan.Web.Auth.LoginService.ArrayOfXElement> GetNonWebAppsAsync()
     {
       return base.Channel.GetNonWebAppsAsync();
     }

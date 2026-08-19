@@ -1,5 +1,5 @@
 <Solution>
   <Folder Name="/backend/">
-    <Project Path="backend/Sxedia.Web.csproj" />
+    <Project Path="backend/Mis.YpepaScan.Web.csproj" />
   </Folder>
 </Solution>

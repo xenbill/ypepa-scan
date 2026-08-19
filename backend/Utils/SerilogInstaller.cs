@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace Sxedia.Web.Utils;
+namespace Mis.YpepaScan.Web.Utils;
 
 /// <summary>Same bootstrap pattern as MeletiManager: logger built from configuration
 /// before the host exists, so startup failures are captured too.</summary>

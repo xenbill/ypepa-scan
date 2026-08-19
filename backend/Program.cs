@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Http.Features;
 using Serilog;
-using Sxedia.Web.Auth;
-using Sxedia.Web.Data;
-using Sxedia.Web.Endpoints;
-using Sxedia.Web.Imaging;
-using Sxedia.Web.Utils;
+using Mis.YpepaScan.Web.Auth;
+using Mis.YpepaScan.Web.Data;
+using Mis.YpepaScan.Web.Endpoints;
+using Mis.YpepaScan.Web.Imaging;
+using Mis.YpepaScan.Web.Utils;
 
 Log.Logger = SerilogInstaller.CreateLogger();
 

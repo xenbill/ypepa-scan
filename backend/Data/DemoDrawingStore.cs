@@ -1,7 +1,7 @@
-using Sxedia.Web.Imaging;
+using Mis.YpepaScan.Web.Imaging;
 using System.Text.Json;
 
-namespace Sxedia.Web.Data;
+namespace Mis.YpepaScan.Web.Data;
 
 /// <summary>
 /// File-based store used for local development/demos, no Oracle needed.

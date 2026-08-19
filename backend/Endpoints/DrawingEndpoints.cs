@@ -1,9 +1,9 @@
 using System.Security.Claims;
 using Serilog;
-using Sxedia.Web.Data;
-using Sxedia.Web.Imaging;
+using Mis.YpepaScan.Web.Data;
+using Mis.YpepaScan.Web.Imaging;
 
-namespace Sxedia.Web.Endpoints;
+namespace Mis.YpepaScan.Web.Endpoints;
 
 /// <summary>Drawing search, metadata, viewing, download, import, update and soft delete.</summary>
 public static class DrawingEndpoints

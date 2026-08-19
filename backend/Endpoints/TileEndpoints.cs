@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.StaticFiles;
-using Sxedia.Web.Imaging;
+using Mis.YpepaScan.Web.Imaging;
 
-namespace Sxedia.Web.Endpoints;
+namespace Mis.YpepaScan.Web.Endpoints;
 
 /// <summary>
 /// Serves the tile cache (DZI descriptors + tiles, thumbnails)

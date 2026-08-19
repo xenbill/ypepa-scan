@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using NetVips;
-using Sxedia.Web.Data;
+using Mis.YpepaScan.Web.Data;
 
-namespace Sxedia.Web.Imaging;
+namespace Mis.YpepaScan.Web.Imaging;
 
 public record ViewInfo(string Type, string Url, string ThumbUrl, int? Width, int? Height);
 

@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Sxedia.Web.Auth.LoginService;
+namespace Mis.YpepaScan.Web.Auth.LoginService;
 
 /// <summary>
 /// Password obfuscation expected by the MIS login service (copied from

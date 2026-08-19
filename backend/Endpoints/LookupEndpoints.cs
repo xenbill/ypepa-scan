@@ -1,6 +1,6 @@
-using Sxedia.Web.Data;
+using Mis.YpepaScan.Web.Data;
 
-namespace Sxedia.Web.Endpoints;
+namespace Mis.YpepaScan.Web.Endpoints;
 
 public sealed record LookupEditDto(string Name, long? ParentId);
 

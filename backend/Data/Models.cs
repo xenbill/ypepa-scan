@@ -1,4 +1,4 @@
-namespace Sxedia.Web.Data;
+namespace Mis.YpepaScan.Web.Data;
 
 public record Lookup(long Id, string Name, long? ParentId = null);
 

@@ -1,7 +1,7 @@
 using System.Text;
-using Sxedia.Web.Auth.LoginService;
+using Mis.YpepaScan.Web.Auth.LoginService;
 
-namespace Sxedia.Web.Auth;
+namespace Mis.YpepaScan.Web.Auth;
 
 public sealed record AuthUser(string Username, string FullName, string Role, int? Category);
 public sealed record AuthResult(bool Success, string? Error, AuthUser? User)

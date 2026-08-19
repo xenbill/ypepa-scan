@@ -1,4 +1,4 @@
-namespace Sxedia.Web.Imaging;
+namespace Mis.YpepaScan.Web.Imaging;
 
 /// <summary>
 /// File-type detection by magic numbers (the stored files have no name/extension).

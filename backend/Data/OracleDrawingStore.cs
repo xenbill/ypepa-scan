@@ -1,10 +1,10 @@
-using Sxedia.Web.Imaging;
+using Mis.YpepaScan.Web.Imaging;
 using System.Data;
 using Dapper;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 
-namespace Sxedia.Web.Data;
+namespace Mis.YpepaScan.Web.Data;
 
 /// <summary>
 /// Reads/writes the legacy C16PE_* tables. The schema is used exactly as the old
