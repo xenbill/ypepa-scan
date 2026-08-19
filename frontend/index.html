@@ -18,6 +18,9 @@
           t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
         }
         document.documentElement.setAttribute('data-theme', t);
+        var s = null;
+        try { s = localStorage.getItem('ypepascan.fontSize'); } catch (e) {}
+        if (s === 'large' || s === 'xlarge') document.documentElement.setAttribute('data-size', s);
       })();
     </script>
   </head>

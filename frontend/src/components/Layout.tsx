@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate, useOutletContext } from 'react-rout
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { APP_RIGHTS, hasRight, logout, type UserInfo } from '../api/api'
 import { APP_VERSION } from '../version'
-import { getThemePref, setThemePref, type ThemePref } from '../theme'
+import { getTextSize, getThemePref, setTextSize, setThemePref, type TextSize, type ThemePref } from '../theme'
 
 export default function Layout() {
   const user = useOutletContext<UserInfo>()
@@ -21,6 +21,8 @@ export default function Layout() {
   // Theme choice lives in localStorage (theme.ts); state here only re-renders the switch.
   const [theme, setTheme] = useState<ThemePref>(getThemePref)
   function pickTheme(t: ThemePref) { setThemePref(t); setTheme(t) }
+  const [textSize, setSize] = useState<TextSize>(getTextSize)
+  function pickSize(s: TextSize) { setTextSize(s); setSize(s) }
 
   // User menu (top right): closes on outside click, Escape, or picking an item.
   const [menuOpen, setMenuOpen] = useState(false)
@@ -92,6 +94,18 @@ export default function Layout() {
                             className={theme === v ? 'active' : undefined}
                             title={v === 'auto' ? 'Ακολουθεί τη ρύθμιση των Windows' : undefined}
                             onClick={() => pickTheme(v)}>
+                      {label}
+                    </button>
+                  ))}
+                </span>
+              </div>
+              <div className="user-menu-theme" aria-label="Μέγεθος γραμμάτων">
+                <span className="user-menu-theme-label">Μέγεθος γραμμάτων</span>
+                <span className="theme-switch" role="radiogroup">
+                  {([['normal', 'Κανονικό'], ['large', 'Μεγάλο'], ['xlarge', 'Πολύ μεγάλο']] as [TextSize, string][]).map(([v, label]) => (
+                    <button key={v} type="button" role="radio" aria-checked={textSize === v}
+                            className={textSize === v ? 'active' : undefined}
+                            onClick={() => pickSize(v)}>
                       {label}
                     </button>
                   ))}

@@ -208,6 +208,14 @@ small { color: var(--ink-soft); }
 .user-menu .theme-switch button + button { border-left: 1px solid var(--border); }
 .user-menu .theme-switch button.active { background: var(--accent); color: var(--on-accent); }
 .user-menu .theme-switch button:hover:not(.active) { background: var(--btn-hover); color: var(--ink); }
+
+/* Text size (theme.ts sets <html data-size>): CSS zoom on the chrome, page content and
+   the viewer's side panel — not on the drawing canvas, and not on the login page. */
+[data-size="large"] .appbar, [data-size="large"] main.page,
+[data-size="large"] .viewer-head, [data-size="large"] .viewer-meta { zoom: 1.1; }
+[data-size="xlarge"] .appbar, [data-size="xlarge"] main.page,
+[data-size="xlarge"] .viewer-head, [data-size="xlarge"] .viewer-meta { zoom: 1.2; }
+@media print { [data-size] main.page { zoom: 1; } }
 .user-menu button {
   display: block; width: 100%; text-align: left;
   background: transparent; border: 0; color: var(--ink);

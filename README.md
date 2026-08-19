@@ -47,7 +47,11 @@ with an ellipsis) with the user's rights (✓ / dimmed, see «Application rights
 `<html data-theme>` by `src/theme.ts` and an inline script in `index.html` so
 there's no flash; `index.css` switches only CSS variables under
 `[data-theme="dark"]`, the app bar stays blueprint blue, the viewer is dark in
-both; print forces light), change password / logout / version (→ changelog).
+both; print forces light), «Μέγεθος γραμμάτων» (Κανονικό / Μεγάλο / Πολύ
+μεγάλο: `localStorage` `ypepascan.fontSize` → `<html data-size>` → CSS `zoom`
+1.1 / 1.2 on the app bar, page content and viewer side panel — not the drawing
+canvas or the login page; browsers without CSS zoom ignore it), change password
+/ logout / version (→ changelog).
 
 ## API
 
