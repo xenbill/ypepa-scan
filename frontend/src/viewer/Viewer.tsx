@@ -160,7 +160,7 @@ export default function Viewer({ id, onClose }: ViewerProps) {
         )}
         {info?.type === 'pdf'
           ? <iframe className="viewer-canvas" title="PDF" src={info.url} />
-          : <div className="viewer-canvas" ref={osdRef} style={{ display: info ? 'block' : 'none' }} />}
+          : <div className="viewer-canvas" ref={osdRef} style={{ visibility: info ? 'visible' : 'hidden' }} />}
         <div className="viewer-meta">
           <div className="meta-head">
             <h3>Στοιχεία σχεδίου</h3>
