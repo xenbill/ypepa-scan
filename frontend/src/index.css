@@ -631,6 +631,16 @@ table.results tr.skeleton-row:hover td { background: inherit; }
 .viewer-body-status { display: block; overflow: auto; background: var(--paper); }
 .viewer-body-status .status-page { margin: 48px auto; }
 
+/* ---------- file drop zone (single import) ---------- */
+.drop-zone {
+  position: relative; border: 2px dashed var(--border-soft); border-radius: 5px; padding: 16px 12px;
+  text-align: center; color: var(--ink-soft); font-size: 13px; cursor: pointer;
+}
+.drop-zone:hover, .drop-zone.is-over { border-color: var(--accent); background: #f3f6fa; }
+.drop-zone.has-file { border-style: solid; color: var(--ink); }
+.drop-zone-file { font-family: var(--font-mono); font-size: 13px; }
+.form-table .drop-zone-input, .drop-zone-input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
 /* ---------- mass import ---------- */
 .modal.mass-modal { max-width: 1040px; }
 .mass-help { margin: -6px 0 12px; font-size: 13px; color: var(--ink-soft); line-height: 1.45; }

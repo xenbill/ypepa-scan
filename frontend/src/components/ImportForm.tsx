@@ -20,7 +20,10 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
   const [xorosId, setXorosId] = useState('')
   const [lastId, setLastId] = useState<number | null>(null)
   const [progress, setProgress] = useState<UploadProgress | null>(null)
+  const [fileName, setFileName] = useState('')
+  const [dragOver, setDragOver] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -44,6 +47,20 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
 
   function resetLookups() {
     setEidosId(''); setKathgId(''); setYpokatId(''); setHstrId(''); setXorosId('')
+    setFileName('')
+  }
+
+  // Dropped file goes into the real <input type=file>, so FormData / `required` keep working.
+  function dropFile(e: React.DragEvent) {
+    e.preventDefault()
+    setDragOver(false)
+    if (busy || !fileRef.current) return
+    const f = e.dataTransfer.files[0]
+    if (!f) return
+    const dt = new DataTransfer()
+    dt.items.add(f)
+    fileRef.current.files = dt.files
+    setFileName(f.name)
   }
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -132,7 +149,21 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
               </tr>
               <tr>
                 <th>Αρχείο *</th>
-                <td colSpan={3}><input name="file" type="file" accept=".tif,.tiff,.pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp" required /></td>
+                <td colSpan={3}>
+                  <div className={'drop-zone' + (dragOver ? ' is-over' : '') + (fileName ? ' has-file' : '')}
+                       onClick={() => !busy && fileRef.current?.click()}
+                       onDragOver={(e) => { e.preventDefault(); if (!busy) setDragOver(true) }}
+                       onDragLeave={() => setDragOver(false)}
+                       onDrop={dropFile}>
+                    {/* kept in the layout (not display:none) so the browser's `required` bubble can anchor to it */}
+                    <input ref={fileRef} name="file" type="file" className="drop-zone-input"
+                           accept=".tif,.tiff,.pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp" required
+                           onChange={(e) => setFileName(e.target.files?.[0]?.name ?? '')} />
+                    {fileName
+                      ? <span className="drop-zone-file">{fileName}</span>
+                      : <span>Σύρετε το αρχείο εδώ ή πατήστε για επιλογή.</span>}
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
