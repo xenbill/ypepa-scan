@@ -1,3 +1,4 @@
+using Sxedia.Web.Imaging;
 using System.Data;
 using Dapper;
 using Oracle.ManagedDataAccess.Client;
@@ -151,11 +152,17 @@ public sealed class OracleDrawingStore : IDrawingStore
     public async Task<DrawingRow?> GetAsync(long id, CancellationToken ct = default)
     {
         await using var con = Open();
-        return await con.QueryFirstOrDefaultAsync<DrawingRow>(
+        var row = await con.QueryFirstOrDefaultAsync<DrawingRow>(
             $@"select {Cols},
                       (select dbms_lob.getlength(b.SXEDIO) from {_owner}.C16PE_SXEDIO_BLOB b
                         where b.SXEDIO_ID = s.SXEDIO_ID and rownum = 1) as SizeBytes
                {BaseSelect} where s.SXEDIO_ID = :id and nvl(s.DELETED, 0) = 0", new { id });
+        if (row is null || row.SizeBytes is null) return row;
+        // Magic-number sniff: only the first bytes of the BLOB, no full read.
+        var head = await con.ExecuteScalarAsync<byte[]>(
+            $@"select dbms_lob.substr(b.SXEDIO, 12, 1) from {_owner}.C16PE_SXEDIO_BLOB b
+                where b.SXEDIO_ID = :id and rownum = 1", new { id });
+        return row with { FileType = head is null ? "unknown" : FileTypes.Sniff(head) };
     }
 
     public async Task<(Stream Stream, long Length)?> OpenFileAsync(long id, CancellationToken ct = default)

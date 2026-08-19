@@ -41,6 +41,8 @@ export interface DrawingRow {
   userIns: string | null
   /** file length in bytes; only present on GET /drawings/{id} */
   sizeBytes?: number | null
+  /** file type from magic numbers ("pdf" | "tiff" | "jpeg" | "png" | "gif" | "bmp" | "webp" | "dwg" | "zip" | "ole" | "unknown"); only present on GET /drawings/{id} */
+  fileType?: string | null
 }
 
 export interface SearchResult {

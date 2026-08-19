@@ -115,7 +115,7 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
               </tr>
               <tr>
                 <th>Αρχείο *</th>
-                <td colSpan={3}><input name="file" type="file" accept=".tif,.tiff,.pdf,.jpg,.jpeg,.png" required /></td>
+                <td colSpan={3}><input name="file" type="file" accept=".tif,.tiff,.pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp" required /></td>
               </tr>
             </tbody>
           </table>

@@ -1,3 +1,4 @@
+using Sxedia.Web.Imaging;
 using System.Text.Json;
 
 namespace Sxedia.Web.Data;
@@ -151,7 +152,8 @@ public sealed class DemoDrawingStore : IDrawingStore
         var d = db.Drawings.FirstOrDefault(x => x.SxedioId == id && !x.Deleted);
         if (d is null) return Task.FromResult<DrawingRow?>(null);
         long? size = File.Exists(FilePath(id)) ? new FileInfo(FilePath(id)).Length : null;
-        return Task.FromResult<DrawingRow?>(ToRow(db, d) with { SizeBytes = size });
+        string? type = size is null ? null : FileTypes.Sniff(FilePath(id));
+        return Task.FromResult<DrawingRow?>(ToRow(db, d) with { SizeBytes = size, FileType = type });
     }
 
     public Task<(Stream Stream, long Length)?> OpenFileAsync(long id, CancellationToken ct = default)

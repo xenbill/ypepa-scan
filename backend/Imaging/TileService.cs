@@ -50,11 +50,26 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
             await using (var dst = new FileStream(originalPath, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20, useAsync: true))
                 await src.CopyToAsync(dst, ct);
 
-            var info = Sniff(originalPath) switch
+            var type = FileTypes.Sniff(originalPath);
+            if (!FileTypes.IsSupported(type))
             {
-                "pdf" => PreparePdf(id, originalPath),
-                _ => PrepareDzi(id, originalPath),
-            };
+                File.Delete(originalPath);
+                log.LogWarning("Drawing {Id}: unsupported file type '{Type}', cannot view", id, type);
+                throw new UnsupportedFileException(type, FileTypes.UnsupportedMessage(type));
+            }
+            ViewInfo info;
+            try
+            {
+                info = type == "pdf" ? PreparePdf(id, originalPath) : PrepareDzi(id, originalPath);
+            }
+            catch (VipsException e)
+            {
+                // Right magic number, unreadable content (truncated/corrupt scan).
+                if (File.Exists(originalPath)) File.Delete(originalPath);
+                log.LogWarning(e, "Drawing {Id}: {Type} file could not be decoded", id, type);
+                throw new UnsupportedFileException(type,
+                    $"Το αρχείο ({FileTypes.Label(type)}) δεν μπορεί να αναγνωσθεί — πιθανόν κατεστραμμένο ή ελλιπές.");
+            }
 
             // The blob copy was only needed as vips input; keeping it would roughly
             // double the cache footprint. (PreparePdf already moved it away.)
@@ -151,21 +166,6 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
         {
             return null;
         }
-    }
-
-    public static string Sniff(string path)
-    {
-        Span<byte> head = stackalloc byte[4];
-        using var fs = File.OpenRead(path);
-        if (fs.Read(head) < 4) return "unknown";
-        return head switch
-        {
-            [0x25, 0x50, 0x44, 0x46] => "pdf",                       // %PDF
-            [0x49, 0x49, 0x2A, 0x00] or [0x4D, 0x4D, 0x00, 0x2A] => "tiff",
-            [0xFF, 0xD8, ..] => "jpeg",
-            [0x89, 0x50, 0x4E, 0x47] => "png",
-            _ => "unknown",
-        };
     }
 
     private ViewInfo PreparePdf(long id, string originalPath)

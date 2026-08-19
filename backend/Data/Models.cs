@@ -41,6 +41,8 @@ public record DrawingRow
     public string? UserIns { get; init; }
     /// <summary>Stored file length. Only populated by GetAsync (single row); null in search lists.</summary>
     public long? SizeBytes { get; init; }
+    /// <summary>File type from magic numbers ("pdf" | "tiff" | "jpeg" | "png" | "gif" | "bmp" | "webp" | "dwg" | "zip" | "ole" | "unknown"). Only populated by GetAsync; null when no file.</summary>
+    public string? FileType { get; init; }
 }
 
 public record SearchResult(IReadOnlyList<DrawingRow> Items, int Total, int Page, int PageSize);
