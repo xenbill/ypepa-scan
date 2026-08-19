@@ -105,7 +105,8 @@ public static class DrawingEndpoints
 
         var meta = new ImportMeta(S("kodikosErg"), S("arithmosSxed"), S("titlosErg"), S("titlosSxed"),
             S("perigrafhSxed"), S("perigrafhErg"), D("hmer"), L("eidosId"), L("kathgId"), L("ypokatId"), L("xorosId"),
-            L("hstrId"), user.Identity?.Name); // USER_INS = logged-in user, never client-supplied
+            L("hstrId"), user.Identity?.Name, // USER_INS = logged-in user, never client-supplied
+            Maziki: S("maziki") is "1" or "true"); // set by the mass-import dialog (one request per file)
 
         await using var stream = file.OpenReadStream();
         // Reject by content, not by extension/Content-Type (both are client-supplied and unreliable).

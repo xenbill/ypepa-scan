@@ -74,7 +74,9 @@ public record ImportMeta(
     long? YpokatId,
     long? XorosId,
     long? HstrId,
-    string? UserIns);
+    string? UserIns,
+    /// <summary>True when the row comes from a mass import (MAZIKI_KATAXWRISI = 1). Ignored on update.</summary>
+    bool Maziki = false);
 
 public interface IDrawingStore
 {

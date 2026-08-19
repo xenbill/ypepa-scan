@@ -189,6 +189,7 @@ public sealed class DemoDrawingStore : IDrawingStore
             HstrId = meta.HstrId,
             DateIns = DateTime.Now,
             UserIns = meta.UserIns, // logged-in user (JWT name), set by the import endpoint
+            MazikiKataxwrisi = meta.Maziki ? 1 : 0,
         });
         Save(db);
         return id;

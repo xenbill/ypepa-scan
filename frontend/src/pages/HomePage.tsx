@@ -91,6 +91,7 @@ export default function HomePage() {
           <div className="hero-actions">
             <button className="primary" onClick={() => navigate('/sxedia')}>Άνοιγμα λίστας σχεδίων</button>
             <button onClick={() => navigate('/sxedia?import=1')}>+ Καταχώριση σχεδίου</button>
+            <button onClick={() => navigate('/sxedia?import=mass')}>Μαζική καταχώριση</button>
           </div>
         </div>
         <HeroArt />

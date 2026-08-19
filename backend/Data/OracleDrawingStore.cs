@@ -215,7 +215,7 @@ public sealed class OracleDrawingStore : IDrawingStore
                values
                (:id, :kodikos, :arithmos, :eidos, :titlosErg, :titlosSxed,
                 :perSxed, :perErg, :ypokat, :hmer, :xoros, :kathg,
-                :hstr, sysdate, :userIns, 0)",
+                :hstr, sysdate, :userIns, :maziki)",
             new
             {
                 id,
@@ -232,6 +232,7 @@ public sealed class OracleDrawingStore : IDrawingStore
                 kathg = meta.KathgId,
                 hstr = meta.HstrId,
                 userIns = meta.UserIns, // logged-in user (JWT name), set by the import endpoint
+                maziki = meta.Maziki ? 1 : 0,
             }, tx);
 
         // Stream the upload into the BLOB without holding it all in memory.
