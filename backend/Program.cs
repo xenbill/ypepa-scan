@@ -33,6 +33,31 @@ try
 
     app.UseSerilogRequestLogging();
 
+    // Client went away (aborted upload, superseded search, closed tab): the endpoint's
+    // CancellationToken fires and throws OperationCanceledException. That's expected,
+    // not an error — swallow it instead of logging a stack trace / returning 500.
+    app.Use(async (ctx, next) =>
+    {
+        try { await next(ctx); }
+        catch (OperationCanceledException) when (ctx.RequestAborted.IsCancellationRequested)
+        {
+            Log.Debug("Request {Method} {Path} cancelled by client", ctx.Request.Method, ctx.Request.Path);
+        }
+    });
+
+    // Dev aid for eyeballing loading states: set a cookie `slow=1500` in the browser
+    // (document.cookie = "slow=1500") and every /api response is delayed that many ms.
+    if (app.Environment.IsDevelopment())
+    {
+        app.Use(async (ctx, next) =>
+        {
+            if (ctx.Request.Path.StartsWithSegments("/api")
+                && int.TryParse(ctx.Request.Cookies["slow"], out var ms) && ms is > 0 and <= 30_000)
+                await Task.Delay(ms, ctx.RequestAborted);
+            await next(ctx);
+        });
+    }
+
     app.UseDefaultFiles();
     app.UseStaticFiles();
 

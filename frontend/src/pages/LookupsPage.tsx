@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { LoadingBlock } from '../components/Loading'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { addLookup, deleteLookup, getLookups, updateLookup, type LookupType } from '../api/api'
 import type { Lookup } from '../api/types'
@@ -13,10 +14,10 @@ const LISTS: { type: LookupType; title: string }[] = [
 
 export default function LookupsPage() {
   const [selected, setSelected] = useState<LookupType>('eidos')
-  const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: getLookups, staleTime: Infinity })
+  const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: ({ signal }) => getLookups(signal), staleTime: Infinity })
   const lk = lookupsQuery.data
 
-  if (!lk) return <p>Φόρτωση…</p>
+  if (!lk) return <LoadingBlock text="Φόρτωση λιστών…" />
 
   const items: Record<LookupType, Lookup[]> = {
     eidos: lk.eidosSxed,

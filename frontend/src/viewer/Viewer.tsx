@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import OpenSeadragon from 'openseadragon'
-import { deleteDrawing, downloadFile, formatDate, formatFileType, formatMb, getDrawing, getLookups, getViewInfo, updateDrawing } from '../api/api'
+import { deleteDrawing, downloadFile, formatDate, formatFileType, formatMb, getDrawing, getLookups, getViewInfo, updateDrawing, UnauthorizedError } from '../api/api'
+import { SkeletonLines, Spinner } from '../components/Loading'
 import ComboSelect from '../components/ComboSelect'
 import ConfirmModal from '../components/ConfirmModal'
 import type { DrawingMeta, DrawingRow, LookupData } from '../api/types'
@@ -18,6 +19,10 @@ export default function Viewer({ id, onClose }: ViewerProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const queryClient = useQueryClient()
 
+  // Download: fetches the whole file before the browser's save dialog appears, so
+  // the button must show it's working (and refuse a second click meanwhile).
+  const download = useMutation({ mutationFn: () => downloadFile(id) })
+
   const deleteMutation = useMutation({
     mutationFn: () => deleteDrawing(id),
     onSuccess: () => {
@@ -28,13 +33,13 @@ export default function Viewer({ id, onClose }: ViewerProps) {
     },
   })
 
-  const drawingQuery = useQuery({ queryKey: ['drawing', id], queryFn: () => getDrawing(id) })
-  const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: getLookups, staleTime: Infinity })
+  const drawingQuery = useQuery({ queryKey: ['drawing', id], queryFn: ({ signal }) => getDrawing(id, signal) })
+  const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: ({ signal }) => getLookups(signal), staleTime: Infinity })
   // The server caches pyramids on disk; only refetched if tiles start failing
   // (the pyramid was evicted while this viewer was open) — see below.
   const viewQuery = useQuery({
     queryKey: ['view', id],
-    queryFn: () => getViewInfo(id),
+    queryFn: ({ signal }) => getViewInfo(id, signal),
     staleTime: Infinity,
     retry: false,
   })
@@ -144,7 +149,11 @@ export default function Viewer({ id, onClose }: ViewerProps) {
               <button onClick={fit}>Προσαρμογή</button>
             </>
           )}
-          <button onClick={() => downloadFile(id)}>Λήψη πρωτοτύπου</button>
+          <button className={download.isPending ? 'btn-busy' : undefined} disabled={download.isPending}
+                  onClick={() => download.mutate()}>
+            {download.isPending && <Spinner size={13} />}
+            {download.isPending ? 'Λήψη…' : 'Λήψη πρωτοτύπου'}
+          </button>
           <button className="danger" onClick={() => setConfirmDelete(true)}>Διαγραφή</button>
           <button onClick={onClose}>Κλείσιμο</button>
         </span>
@@ -155,7 +164,14 @@ export default function Viewer({ id, onClose }: ViewerProps) {
         )}
         {viewQuery.isPending && (
           <div className="viewer-message">
+            <Spinner size={28} />
             Προετοιμασία σχεδίου… (την πρώτη φορά χρειάζεται λίγα δευτερόλεπτα)
+          </div>
+        )}
+        {download.isError && (
+          <div className="viewer-toast status-err">
+            {download.error instanceof UnauthorizedError ? 'Η σύνδεση έληξε — συνδεθείτε ξανά.' : (download.error as Error).message}
+            {' '}<button onClick={() => download.reset()}>×</button>
           </div>
         )}
         {info?.type === 'pdf'
@@ -174,8 +190,16 @@ export default function Viewer({ id, onClose }: ViewerProps) {
               lookups={lookupsQuery.data}
               onDone={() => setEditing(false)}
             />
+          ) : drawingQuery.isPending ? (
+            <>
+              <div className="meta-section"><h4>Σχέδιο</h4><SkeletonLines rows={4} /></div>
+              <div className="meta-section"><h4>Έργο</h4><SkeletonLines rows={5} /></div>
+              <div className="meta-section"><h4>Πρόσθετες πληροφορίες</h4><SkeletonLines rows={5} /></div>
+            </>
+          ) : drawingQuery.isError ? (
+            <p className="status-err">Σφάλμα: {(drawingQuery.error as Error).message}</p>
           ) : (
-            sections.map(([title, rows]) => (
+            sections.filter(([, rows]) => rows.some(([, v]) => v)).map(([title, rows]) => (
               <div key={title} className="meta-section">
                 <h4>{title}</h4>
                 <table>

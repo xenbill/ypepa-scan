@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { importDrawing } from '../api/api'
+import { AbortedError, formatMb, importDrawing, type UploadProgress } from '../api/api'
 import ComboSelect from './ComboSelect'
+import { ProgressBar, Spinner } from './Loading'
 import type { LookupData } from '../api/types'
 
 interface ImportFormProps {
@@ -18,10 +19,18 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
   const [hstrId, setHstrId] = useState('')
   const [xorosId, setXorosId] = useState('')
   const [lastId, setLastId] = useState<number | null>(null)
+  const [progress, setProgress] = useState<UploadProgress | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: importDrawing,
+    mutationFn: (fd: FormData) => {
+      const ctrl = new AbortController()
+      abortRef.current = ctrl
+      setProgress({ loaded: 0, total: 0, saving: false })
+      return importDrawing(fd, setProgress, ctrl.signal)
+    },
+    onSettled: () => { abortRef.current = null; setProgress(null) },
     onSuccess: ({ id }) => {
       setLastId(id)
       // New drawing must appear in any search page.
@@ -46,10 +55,15 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
   }
 
   const ypokat = lookups.ypokatErg.filter((y) => !kathgId || y.parentId === Number(kathgId))
+  const busy = mutation.isPending
+  const pct = progress && progress.total > 0 ? (progress.loaded / progress.total) * 100 : 0
+  // Backdrop click / Κλείσιμο are ignored while sending: closing would hide the
+  // outcome while the server keeps writing the file.
+  const close = () => { if (!busy) onClose() }
 
   return (
-    <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
+    <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && close()}>
+      <div className={'modal' + (busy ? ' is-busy' : '')} aria-busy={busy}>
         <h3>Καταχώριση νέου σχεδίου</h3>
         <form onSubmit={submit}>
           <table className="form-table">
@@ -119,13 +133,36 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
               </tr>
             </tbody>
           </table>
+          {busy && progress && (
+            <div className="upload-status" aria-live="polite">
+              <div className="upload-line">
+                <span>
+                  <Spinner size={13} />{' '}
+                  {progress.saving
+                    ? 'Αποθήκευση στη βάση δεδομένων…'
+                    : progress.total > 0 ? 'Αποστολή αρχείου…' : 'Έναρξη αποστολής…'}
+                </span>
+                {!progress.saving && progress.total > 0 && (
+                  <span className="mono">
+                    {Math.round(pct)}% ({formatMb(progress.loaded)} / {formatMb(progress.total)})
+                  </span>
+                )}
+              </div>
+              <ProgressBar percent={pct} indeterminate={progress.saving} />
+            </div>
+          )}
           <p>
-            <button className="primary" type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Αποστολή…' : 'Καταχώριση'}
+            <button className={'primary' + (busy ? ' btn-busy' : '')} type="submit" disabled={busy}>
+              {busy && <Spinner size={13} />}
+              {busy ? 'Αποστολή…' : 'Καταχώριση'}
             </button>{' '}
-            <button type="button" onClick={onClose}>Κλείσιμο</button>{' '}
+            {busy
+              ? <button type="button" onClick={() => abortRef.current?.abort()}>Ακύρωση</button>
+              : <button type="button" onClick={close}>Κλείσιμο</button>}{' '}
             {mutation.isError && (
-              <span className="status-err">{(mutation.error as Error).message}</span>
+              <span className={mutation.error instanceof AbortedError ? 'status-warn' : 'status-err'}>
+                {(mutation.error as Error).message}
+              </span>
             )}
             {mutation.isSuccess && lastId != null && (
               <span className="status-ok">Καταχωρίστηκε με Α/Α {lastId}.</span>

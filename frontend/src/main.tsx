@@ -1,9 +1,10 @@
 import { StrictMode } from 'react'
+import { LoadingBlock } from './components/Loading'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import './index.css'
-import { getMe } from './api/api'
+import { getMe, NotFoundError, UnauthorizedError } from './api/api'
 import App from './App'
 import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
@@ -15,7 +16,8 @@ import Viewer from './viewer/Viewer'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      // Retrying a 401/404 only delays the message the user is going to see anyway.
+      retry: (count, err) => count < 1 && !(err instanceof UnauthorizedError || err instanceof NotFoundError),
       refetchOnWindowFocus: false,
       staleTime: 60_000,
     },
@@ -25,7 +27,7 @@ const queryClient = new QueryClient({
 /** Gate: everything below requires a valid session cookie. */
 function RequireAuth() {
   const me = useQuery({ queryKey: ['me'], queryFn: getMe, retry: false, staleTime: 5 * 60_000 })
-  if (me.isPending) return <p>Έλεγχος σύνδεσης…</p>
+  if (me.isPending) return <div className="page-loading"><LoadingBlock text="Έλεγχος σύνδεσης…" /></div>
   if (me.isError) return <Navigate to="/login" replace />
   return <Outlet context={me.data} />
 }

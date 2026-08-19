@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { Skeleton, Spinner } from './components/Loading'
 import {
   formatDate, getLookups, searchDrawings,
   UnauthorizedError, type Sort,
@@ -9,6 +10,7 @@ import { emptyFilters, type Filters } from './api/types'
 import ComboSelect from './components/ComboSelect'
 import ImportForm from './components/ImportForm'
 
+const SKELETON_WIDTHS = ['70%', '45%', '85%', '60%', '50%', '78%']
 const PAGE_SIZE = 20
 
 // Column set and order mirror the legacy "Αναζήτηση σχεδίων" list.
@@ -36,15 +38,18 @@ export default function App() {
   const [page, setPage] = useState(1)
   const [showImport, setShowImport] = useState(params.get('import') === '1')
 
-  const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: getLookups, staleTime: Infinity })
+  const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: ({ signal }) => getLookups(signal), staleTime: Infinity })
   const lookups = lookupsQuery.data
 
   const searchQuery = useQuery({
     queryKey: ['drawings', filters, sort, page],
-    queryFn: () => searchDrawings(filters, sort, page, PAGE_SIZE),
+    queryFn: ({ signal }) => searchDrawings(filters, sort, page, PAGE_SIZE, signal),
     placeholderData: keepPreviousData,
   })
   const result = searchQuery.data
+  // First load => skeleton rows; later loads (filters/page/sort) => old rows dimmed.
+  const initialLoading = searchQuery.isPending
+  const refetching = searchQuery.isFetching && !initialLoading
 
   const error = lookupsQuery.error ?? searchQuery.error
   if (error instanceof UnauthorizedError) return <Navigate to="/login" replace />
@@ -129,7 +134,8 @@ export default function App() {
 
       {error != null && <p className="status-err">Σφάλμα: {(error as Error).message}</p>}
 
-      <section className="card table-card">
+      <section className={'card table-card' + (refetching ? ' is-refetching' : '')} aria-busy={searchQuery.isFetching}>
+        {refetching && <div className="table-busy"><Spinner size={13} /> Αναζήτηση…</div>}
         <div className="table-scroll">
           <table className="results">
             <thead>
@@ -146,6 +152,14 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
+              {initialLoading && Array.from({ length: 8 }, (_, i) => (
+                <tr key={'sk' + i} className="skeleton-row" aria-hidden="true">
+                  {COLUMNS.map((c, j) => (
+                    <td key={c.key}><Skeleton width={SKELETON_WIDTHS[(i + j) % SKELETON_WIDTHS.length]} height={12} /></td>
+                  ))}
+                  <td><Skeleton width={64} height={22} /></td>
+                </tr>
+              ))}
               {(result?.items ?? []).map((d) => (
                 <tr key={d.sxedioId}>
                   <td className="mono">{d.kodikosErg}</td>
@@ -189,10 +203,10 @@ export default function App() {
       </section>
 
       {result && (
-        <div className="pager">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)}>‹ Προηγούμενη</button>
+        <div className={'pager' + (refetching ? ' is-refetching' : '')}>
+          <button disabled={page <= 1 || refetching} onClick={() => setPage(page - 1)}>‹ Προηγούμενη</button>
           <span>Σελίδα {page} / {pages} — {result.total} σχέδια</span>
-          <button disabled={page >= pages} onClick={() => setPage(page + 1)}>Επόμενη ›</button>
+          <button disabled={page >= pages || refetching} onClick={() => setPage(page + 1)}>Επόμενη ›</button>
         </div>
       )}
 

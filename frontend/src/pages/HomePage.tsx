@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getStats, type StatItem } from '../api/api'
+import { Skeleton, SkeletonLines } from '../components/Loading'
 
 /** Compact single-hue bar list: sorted desc, proportional bars, scrolls past ~8 rows. */
 function StatList({ title, items }: { title: string; items: StatItem[] }) {
@@ -21,6 +22,15 @@ function StatList({ title, items }: { title: string; items: StatItem[] }) {
           </div>
         ))}
       </div>
+    </section>
+  )
+}
+
+function StatListSkeleton({ title }: { title: string }) {
+  return (
+    <section className="card home-card" aria-busy="true">
+      <h2>{title}</h2>
+      <div className="stat-scroll"><SkeletonLines rows={6} /></div>
     </section>
   )
 }
@@ -49,7 +59,7 @@ function HeroArt() {
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const stats = useQuery({ queryKey: ['stats'], queryFn: getStats, staleTime: 60_000 })
+  const stats = useQuery({ queryKey: ['stats'], queryFn: ({ signal }) => getStats(signal), staleTime: 60_000 })
 
   return (
     <div className="home-grid">
@@ -57,7 +67,7 @@ export default function HomePage() {
         <div className="hero-text">
           <div className="hero-eyebrow">Αρχείο τεχνικών σχεδίων</div>
           <p className="home-stat">
-            {stats.data ? stats.data.total.toLocaleString('el-GR') : '…'}
+            {stats.data ? stats.data.total.toLocaleString('el-GR') : <Skeleton width={110} height={38} />}
             <span> σχέδια στο αρχείο</span>
           </p>
           <p className="hero-note">
@@ -70,9 +80,21 @@ export default function HomePage() {
         </div>
         <HeroArt />
       </section>
-      {stats.data && <StatList title="Ανά κατηγορία έργου" items={stats.data.perKathgoria} />}
-      {stats.data && <StatList title="Ανά είδος σχεδίου" items={stats.data.perEidos} />}
-      {stats.data && <StatList title="Ανά μονάδα" items={stats.data.perMonada} />}
+      {stats.data ? (
+        <>
+          <StatList title="Ανά κατηγορία έργου" items={stats.data.perKathgoria} />
+          <StatList title="Ανά είδος σχεδίου" items={stats.data.perEidos} />
+          <StatList title="Ανά μονάδα" items={stats.data.perMonada} />
+        </>
+      ) : stats.isError ? (
+        <p className="status-err">Σφάλμα: {(stats.error as Error).message}</p>
+      ) : (
+        <>
+          <StatListSkeleton title="Ανά κατηγορία έργου" />
+          <StatListSkeleton title="Ανά είδος σχεδίου" />
+          <StatListSkeleton title="Ανά μονάδα" />
+        </>
+      )}
     </div>
   )
 }
