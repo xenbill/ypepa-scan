@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react'
 // target es2015 keeps the bundle runnable on older browsers/PCs.
 export default defineConfig({
   plugins: [react()],
+  // Shown in Οδηγίες → Έκδοση & αλλαγές next to APP_VERSION (src/version.ts).
+  define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)) },
   build: {
     target: 'es2015',
     outDir: '../backend/wwwroot',

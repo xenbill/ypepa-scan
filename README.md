@@ -34,11 +34,13 @@ solution `Mis.YpepaScan.slnx`. Deployed DLL: `Mis.YpepaScan.Web.dll` (see
 | `/drawings` | Drawing list: filters, sort, page, page size (10/20/50/100, remembered) all live in the URL so Back/close return to the same list |
 | `/drawings/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
 | `/lookups` | Maintain lookup tables (categories, types, …) |
+| `/manual` | In-app user manual (Οδηγίες): tabs per area (Γενικά, Αναζήτηση & λίστα, Προβολή/Επεξεργασία, Καταχώριση incl. supported file types, Μαζική καταχώριση, Λίστες επιλογών) with screenshots, plus «Έκδοση & αλλαγές» (version + changelog). `?tab=version` deep-links a tab |
 | `/change-password` | Change password (MIS service or dev store) |
 | `*` | Proper 404 / error pages |
 
-App bar: ΥΠΕΠΑ emblem (also the favicon), brand links home, user dropdown
-(avatar + name) with change password / logout.
+App bar: ΥΠΕΠΑ emblem (also the favicon), brand links home (tooltip shows the
+version), nav Αρχική / Σχέδια / Λίστες επιλογών / Οδηγίες, user dropdown
+(avatar + name) with change password / logout / version (→ changelog).
 
 ## API
 
@@ -152,6 +154,19 @@ exercised at realistic sizes.
 - **Edit / delete** — metadata of an existing record can be edited
   (`PUT`) and a record deleted (`DELETE`, with confirmation) from the viewer.
 - **Lookups** — categories/types etc. are maintained in-app (`/lookups`).
+- **Not in the web app**: direct scanning from a scanner and printing — users
+  keep the Windows (dedicated scan) app / scanner or printer software for those
+  and upload the resulting file here.
+
+## Version, changelog, manual
+
+- `frontend/src/version.ts` — `APP_VERSION` + `CHANGELOG` (feature-based, Greek,
+  written for end users); `frontend/package.json` carries the same version. The
+  build date is injected by Vite (`__BUILD_DATE__`).
+- `frontend/src/pages/ManualPage.tsx` — the in-app manual; screenshots in
+  `frontend/public/manual/` (captured from demo mode).
+- **Rule (see `CLAUDE.md`)**: every change bumps the version, adds to the
+  changelog, and updates README + manual (and screenshots when the UI changed).
 
 ## Not done yet (candidates for next iteration)
 

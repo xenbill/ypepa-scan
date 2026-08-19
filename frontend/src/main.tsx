@@ -10,6 +10,7 @@ import App from './App'
 import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
 import LookupsPage from './pages/LookupsPage'
+import ManualPage from './pages/ManualPage'
 import LoginPage from './pages/LoginPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import Viewer from './viewer/Viewer'
@@ -110,6 +111,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="/" element={<HomePage />} />
                 <Route path="/drawings" element={<App />} />
                 <Route path="/lookups" element={<LookupsPage />} />
+                <Route path="/manual" element={<ManualPage />} />
                 <Route path="/change-password" element={<ChangePasswordPage />} />
                 {/* Unknown URL: a real 404 page (inside the app chrome) instead of a silent redirect. */}
                 <Route path="*" element={<NotFoundPage />} />

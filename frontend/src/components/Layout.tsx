@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { logout, type UserInfo } from '../api/api'
+import { APP_VERSION } from '../version'
 
 export default function Layout() {
   const user = useOutletContext<UserInfo>()
@@ -36,7 +37,7 @@ export default function Layout() {
   return (
     <>
       <header className="appbar">
-        <Link to="/" className="brand" title="Αρχική">
+        <Link to="/" className="brand" title={`Αρχική — έκδοση ${APP_VERSION}`}>
           <span className="brand-mark"><img src="/ypepa-emblem.png" alt="ΥΠΕΠΑ" /></span>
           <div>
             <h1>Σχέδια ΥΠΕΠΑ</h1>
@@ -47,6 +48,7 @@ export default function Layout() {
           <NavLink to="/" end>Αρχική</NavLink>
           <NavLink to="/drawings">Σχέδια</NavLink>
           <NavLink to="/lookups">Λίστες επιλογών</NavLink>
+          <NavLink to="/manual">Οδηγίες</NavLink>
         </nav>
         <div className="appbar-right" ref={menuRef}>
           <button
@@ -73,6 +75,10 @@ export default function Layout() {
                       onClick={() => { setMenuOpen(false); logoutMutation.mutate() }}>
                 Αποσύνδεση
               </button>
+              <Link role="menuitem" className="user-menu-version" to="/manual?tab=version"
+                    onClick={() => setMenuOpen(false)}>
+                Έκδοση <span className="mono">v{APP_VERSION}</span>
+              </Link>
             </div>
           )}
         </div>
