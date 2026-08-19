@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { LoadingBlock } from './components/Loading'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import './index.css'
 import { getMe, NotFoundError, UnauthorizedError } from './api/api'
@@ -35,9 +35,13 @@ function RequireAuth() {
 function ViewerRoute() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const numId = Number(id)
   if (!Number.isFinite(numId)) return <Navigate to="/sxedia" replace />
-  return <Viewer id={numId} onClose={() => navigate('/sxedia')} />
+  // The list passes its query string in navigation state, so "Κλείσιμο" returns
+  // to the same filtered/sorted page. Direct links (no state) just go to the list.
+  const from = (location.state as { from?: string } | null)?.from ?? ''
+  return <Viewer id={numId} onClose={() => navigate('/sxedia' + from)} />
 }
 
 createRoot(document.getElementById('root')!).render(

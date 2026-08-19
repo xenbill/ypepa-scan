@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Skeleton, Spinner } from './components/Loading'
 import {
@@ -36,13 +36,27 @@ const COLUMNS: { key: string; label: string; sortable: boolean }[] = [
   { key: 'dateIns', label: 'Εισαγωγή', sortable: true },
 ]
 
+const FILTER_KEYS = Object.keys(emptyFilters) as (keyof Filters)[]
+
+/** Filters/sort/page live in the URL (?q=…&kathg=…&sortBy=…&page=…): the browser
+    back button, a bookmark, or "Κλείσιμο" in the viewer all restore the same list. */
+function readListState(params: URLSearchParams) {
+  const filters = { ...emptyFilters }
+  for (const k of FILTER_KEYS) filters[k] = params.get(k) ?? ''
+  const sortBy = params.get('sortBy')
+  const sortDir = params.get('sortDir')
+  const sort: Sort | null = sortBy ? { key: sortBy, dir: sortDir === 'desc' ? 'desc' : 'asc' } : null
+  const page = Math.max(1, Number(params.get('page')) || 1)
+  return { filters, sort, page }
+}
+
 export default function App() {
   const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const [draftQ, setDraftQ] = useState('')
-  const [filters, setFilters] = useState<Filters>(emptyFilters)
-  const [sort, setSort] = useState<Sort | null>(null)
-  const [page, setPage] = useState(1)
+  const location = useLocation()
+  const [params, setParams] = useSearchParams()
+  const { filters, sort, page } = useMemo(() => readListState(params), [params])
+  const [draftQ, setDraftQ] = useState(filters.q)
+  useEffect(() => { setDraftQ(filters.q) }, [filters.q]) // back/forward changed q under us
   const [pageSize, setPageSize] = useState(loadPageSize)
   function changePageSize(n: number) {
     setPageSize(n)
@@ -50,6 +64,22 @@ export default function App() {
     try { localStorage.setItem(PAGE_SIZE_KEY, String(n)) } catch { /* ignore */ }
   }
   const [showImport, setShowImport] = useState(params.get('import') === '1')
+
+  // Writes filters/sort/page back to the URL. `replace` so tweaking filters doesn't
+  // pile up history entries — Back goes to the previous *page*, not the previous filter.
+  function writeListState(next: { filters?: Filters; sort?: Sort | null; page?: number }) {
+    const f = next.filters ?? filters
+    const s = next.sort === undefined ? sort : next.sort
+    const p = next.page ?? page
+    const out = new URLSearchParams()
+    for (const k of FILTER_KEYS) if (f[k]) out.set(k, f[k])
+    if (s) { out.set('sortBy', s.key); out.set('sortDir', s.dir) }
+    if (p > 1) out.set('page', String(p))
+    setParams(out, { replace: true })
+  }
+  const setPage = (p: number) => writeListState({ page: p })
+  const openDrawing = (id: number) =>
+    navigate(`/sxedio/${id}`, { state: { from: location.search } })
 
   const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: ({ signal }) => getLookups(signal), staleTime: Infinity })
   const lookups = lookupsQuery.data
@@ -68,15 +98,14 @@ export default function App() {
   if (error instanceof UnauthorizedError) return <Navigate to="/login" replace />
 
   function apply(next: Filters) {
-    setFilters(next)
-    setPage(1)
+    writeListState({ filters: next, page: 1 })
   }
 
   function toggleSort(key: string) {
-    setPage(1)
-    setSort((s) => s?.key !== key
+    const next: Sort | null = sort?.key !== key
       ? { key, dir: 'asc' }
-      : s.dir === 'asc' ? { key, dir: 'desc' } : null)
+      : sort.dir === 'asc' ? { key, dir: 'desc' } : null
+    writeListState({ sort: next, page: 1 })
   }
 
   const setFilter = (key: keyof Filters) => (id: string) => {
@@ -178,7 +207,7 @@ export default function App() {
                   <td className="mono">{d.kodikosErg}</td>
                   <td>
                     <a className="mono" href={`/sxedio/${d.sxedioId}`}
-                       onClick={(e) => { e.preventDefault(); navigate(`/sxedio/${d.sxedioId}`) }}>
+                       onClick={(e) => { e.preventDefault(); openDrawing(d.sxedioId) }}>
                       {d.arithmosSxed || '—'}
                     </a>
                   </td>
@@ -193,7 +222,7 @@ export default function App() {
                   <td className="trunc" title={d.perigrafhErg ?? ''}>{d.perigrafhErg}</td>
                   <td className="mono">{formatDate(d.dateIns)}</td>
                   <td>
-                    <button onClick={() => navigate(`/sxedio/${d.sxedioId}`)}>Προβολή</button>
+                    <button onClick={() => openDrawing(d.sxedioId)}>Προβολή</button>
                   </td>
                 </tr>
               ))}
