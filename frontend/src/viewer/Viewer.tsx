@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import OpenSeadragon from 'openseadragon'
 import { deleteDrawing, downloadFile, formatDate, formatFileType, formatMb, getDrawing, getLookups, getViewInfo, updateDrawing, UnauthorizedError } from '../api/api'
 import { SkeletonLines, Spinner } from '../components/Loading'
+import { NotFoundError } from '../api/api'
+import { StatusPage } from '../pages/StatusPage'
 import ComboSelect from '../components/ComboSelect'
 import ConfirmModal from '../components/ConfirmModal'
 import type { DrawingMeta, DrawingRow, LookupData } from '../api/types'
@@ -127,6 +129,25 @@ export default function Viewer({ id, onClose }: ViewerProps) {
         ]],
       ]
     : []
+
+  // Deleted / never existed: a clear page instead of an empty viewer with two error lines.
+  if (drawingQuery.error instanceof NotFoundError) {
+    return (
+      <div className="viewer">
+        <div className="viewer-head">
+          <strong>#{id}</strong>
+          <span className="viewer-title" />
+          <span className="viewer-buttons"><button onClick={onClose}>Κλείσιμο</button></span>
+        </div>
+        <div className="viewer-body viewer-body-status">
+          <StatusPage code="404" title={`Το σχέδιο #${id} δεν βρέθηκε`}
+                      message="Μπορεί να έχει διαγραφεί ή ο σύνδεσμος να είναι λάθος.">
+            <button className="primary" onClick={onClose}>Επιστροφή στη λίστα</button>
+          </StatusPage>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="viewer">

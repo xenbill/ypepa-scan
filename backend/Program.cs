@@ -45,15 +45,23 @@ try
         }
     });
 
-    // Dev aid for eyeballing loading states: set a cookie `slow=1500` in the browser
-    // (document.cookie = "slow=1500") and every /api response is delayed that many ms.
+    // Dev aids for eyeballing loading/error states (cookies set from the browser console):
+    //   document.cookie = "slow=1500"  -> every /api response delayed that many ms
+    //   document.cookie = "fail=503"   -> every /api request answered with that status
     if (app.Environment.IsDevelopment())
     {
         app.Use(async (ctx, next) =>
         {
-            if (ctx.Request.Path.StartsWithSegments("/api")
-                && int.TryParse(ctx.Request.Cookies["slow"], out var ms) && ms is > 0 and <= 30_000)
-                await Task.Delay(ms, ctx.RequestAborted);
+            if (ctx.Request.Path.StartsWithSegments("/api"))
+            {
+                if (int.TryParse(ctx.Request.Cookies["slow"], out var ms) && ms is > 0 and <= 30_000)
+                    await Task.Delay(ms, ctx.RequestAborted);
+                if (int.TryParse(ctx.Request.Cookies["fail"], out var status) && status is >= 400 and <= 599)
+                {
+                    ctx.Response.StatusCode = status;
+                    return;
+                }
+            }
             await next(ctx);
         });
     }
