@@ -8,6 +8,30 @@ export class NotFoundError extends Error {
   constructor() { super('Δεν βρέθηκε — ίσως έχει διαγραφεί.') }
 }
 
+/** The request never reached the server (API down, network off, proxy refused).
+    Handled centrally in main.tsx: the auth gate re-checks and shows the
+    "Ο διακομιστής δεν αποκρίνεται" page instead of a per-screen error line. */
+export class NetworkError extends Error {
+  constructor() { super('Δεν υπάρχει επικοινωνία με τον διακομιστή.') }
+}
+
+/** fetch() that turns "server unreachable" into a NetworkError: the browser's
+    opaque "Failed to fetch" TypeError, or a 502/503/504 from whatever sits in
+    front of the app (IIS with the app pool stopped, the Vite dev proxy, a
+    reverse proxy). Aborts (React Query cancelling a superseded query) pass through. */
+async function request(url: string, init?: RequestInit): Promise<Response> {
+  let r: Response
+  try {
+    r = await fetch(url, init)
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') throw e
+    if (e instanceof TypeError) throw new NetworkError()
+    throw e
+  }
+  if (r.status === 502 || r.status === 503 || r.status === 504) throw new NetworkError()
+  return r
+}
+
 /** Path to come back to after re-login: current path + query (never the login page itself). */
 export function loginUrl(returnTo?: string): string {
   const here = returnTo ?? location.pathname + location.search
@@ -51,7 +75,7 @@ interface AuthResponse {
 // filters again) or its component unmounts, the in-flight request is aborted and
 // the server request is cancelled (ASP.NET RequestAborted => CancellationToken).
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const r = await fetch(url, { signal })
+  const r = await request(url, { signal })
   if (r.status === 401) throw new UnauthorizedError()
   if (r.status === 404) throw new NotFoundError()
   if (!r.ok) {
@@ -65,7 +89,7 @@ async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
 export const getAuthMode = () => getJson<AuthMode>('/api/auth/mode')
 
 export async function login(username: string, password: string, category: number | null): Promise<UserInfo> {
-  const r = await fetch('/api/auth/login', {
+  const r = await request('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password, category }),
@@ -81,13 +105,13 @@ export async function login(username: string, password: string, category: number
 
 /** Server expires the session cookie. */
 export async function logout(): Promise<void> {
-  await fetch('/api/auth/logout', { method: 'POST' })
+  await request('/api/auth/logout', { method: 'POST' })
 }
 
 export const getMe = () => getJson<UserInfo>('/api/auth/me')
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
-  const r = await fetch('/api/auth/change-password', {
+  const r = await request('/api/auth/change-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ currentPassword, newPassword }),
@@ -132,7 +156,7 @@ export const getViewInfo = (id: number, signal?: AbortSignal) => getJson<ViewInf
 
 /** Downloads via fetch so a 401 can be handled instead of showing an error page. */
 export async function downloadFile(id: number): Promise<void> {
-  const r = await fetch(`/api/drawings/${id}/file`)
+  const r = await request(`/api/drawings/${id}/file`)
   if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) throw new Error(`Σφάλμα λήψης (${r.status})`)
   const disposition = r.headers.get('Content-Disposition') ?? ''
@@ -148,7 +172,7 @@ export async function downloadFile(id: number): Promise<void> {
 }
 
 export async function updateDrawing(id: number, meta: DrawingMeta): Promise<void> {
-  const r = await fetch(`/api/drawings/${id}`, {
+  const r = await request(`/api/drawings/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(meta),
@@ -187,10 +211,11 @@ export function importDrawing(
       if (onProgress && e.lengthComputable) onProgress({ loaded: e.loaded, total: e.total, saving: e.loaded >= e.total })
     }
     xhr.upload.onload = () => { if (onProgress) onProgress({ loaded: 1, total: 1, saving: true }) }
-    xhr.onerror = () => reject(new Error('Σφάλμα δικτύου κατά την αποστολή.'))
+    xhr.onerror = () => reject(new NetworkError())
     xhr.onabort = () => reject(new AbortedError())
     xhr.onload = () => {
       if (xhr.status === 401) return reject(new UnauthorizedError())
+      if (xhr.status === 502 || xhr.status === 503 || xhr.status === 504) return reject(new NetworkError())
       // responseType=json => xhr.response is parsed (null when the body wasn't JSON)
       const body = xhr.response as { id?: number; error?: string } | null
       if (xhr.status < 200 || xhr.status >= 300)
@@ -207,7 +232,7 @@ export function importDrawing(
 }
 
 export async function deleteDrawing(id: number): Promise<void> {
-  const r = await fetch(`/api/drawings/${id}`, { method: 'DELETE' })
+  const r = await request(`/api/drawings/${id}`, { method: 'DELETE' })
   if (r.status === 401) throw new UnauthorizedError()
   if (!r.ok) throw new Error(`Σφάλμα διαγραφής (${r.status})`)
 }
@@ -216,7 +241,7 @@ export async function deleteDrawing(id: number): Promise<void> {
 export type LookupType = 'eidos' | 'kathgoria' | 'ypokatigoria' | 'xoros'
 
 async function lookupCall(url: string, method: string, body?: object): Promise<void> {
-  const r = await fetch(url, {
+  const r = await request(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,

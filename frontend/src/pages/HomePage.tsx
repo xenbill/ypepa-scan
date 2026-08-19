@@ -72,9 +72,45 @@ function HeroArt() {
   )
 }
 
+const ACTIONS = [
+  {
+    to: '/drawings', primary: true,
+    title: 'Λίστα σχεδίων', desc: 'Αναζήτηση με φίλτρα, ταξινόμηση και προβολή.',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5L21 21" />
+      </svg>
+    ),
+  },
+  {
+    to: '/drawings?import=1', primary: false,
+    title: 'Καταχώριση σχεδίου', desc: 'Νέο σχέδιο με στοιχεία και αρχείο εικόνας.',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z" /><path d="M14 3v5h5" /><path d="M12 11v6M9 14h6" />
+      </svg>
+    ),
+  },
+  {
+    to: '/drawings?import=mass', primary: false,
+    title: 'Μαζική καταχώριση', desc: 'Πολλά αρχεία μαζί, με κοινά στοιχεία.',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M8 7h11a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" /><path d="M4 16V5a1 1 0 0 1 1-1h11" /><path d="M13.5 11v6M10.5 14h6" />
+      </svg>
+    ),
+  },
+]
+
 export default function HomePage() {
   const navigate = useNavigate()
   const stats = useQuery({ queryKey: ['stats'], queryFn: ({ signal }) => getStats(signal), staleTime: 60_000 })
+  const d = stats.data
+  const kpis: { label: string; value: number | null }[] = [
+    { label: 'κατηγορίες έργου', value: d ? d.perKathgoria.filter((s) => s.id != null).length : null },
+    { label: 'είδη σχεδίου', value: d ? d.perEidos.filter((s) => s.id != null).length : null },
+    { label: 'μονάδες', value: d ? d.perMonada.filter((s) => s.id != null).length : null },
+  ]
 
   return (
     <div className="home-grid">
@@ -82,25 +118,43 @@ export default function HomePage() {
         <div className="hero-text">
           <div className="hero-eyebrow">Αρχείο τεχνικών σχεδίων</div>
           <p className="home-stat">
-            {stats.data ? stats.data.total.toLocaleString('el-GR') : <Skeleton width={110} height={38} />}
+            {d ? d.total.toLocaleString('el-GR') : <Skeleton width={110} height={38} />}
             <span> σχέδια στο αρχείο</span>
           </p>
           <p className="hero-note">
             Αναζητήστε και προβάλετε τα αρχειοθετημένα σχέδια ή καταχωρίστε νέα.
           </p>
-          <div className="hero-actions">
-            <button className="primary" onClick={() => navigate('/drawings')}>Άνοιγμα λίστας σχεδίων</button>
-            <button onClick={() => navigate('/drawings?import=1')}>+ Καταχώριση σχεδίου</button>
-            <button onClick={() => navigate('/drawings?import=mass')}>Μαζική καταχώριση</button>
-          </div>
+          <dl className="hero-kpis">
+            {kpis.map((k) => (
+              <div key={k.label}>
+                <dt>{k.value != null ? k.value.toLocaleString('el-GR') : <Skeleton width={24} height={16} />}</dt>
+                <dd>{k.label}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
         <HeroArt />
       </section>
-      {stats.data ? (
+
+      <nav className="home-actions" aria-label="Ενέργειες">
+        {ACTIONS.map((a) => (
+          <a key={a.to} href={a.to} className={'card action-tile' + (a.primary ? ' action-primary' : '')}
+             onClick={(e) => { e.preventDefault(); navigate(a.to) }}>
+            <span className="action-icon">{a.icon}</span>
+            <span className="action-body">
+              <strong>{a.title}</strong>
+              <span>{a.desc}</span>
+            </span>
+            <span className="action-arrow" aria-hidden="true">→</span>
+          </a>
+        ))}
+      </nav>
+
+      {d ? (
         <>
-          <StatList title="Ανά κατηγορία έργου" items={stats.data.perKathgoria} param="kathg" />
-          <StatList title="Ανά είδος σχεδίου" items={stats.data.perEidos} param="eidos" />
-          <StatList title="Ανά μονάδα" items={stats.data.perMonada} param="hstr" />
+          <StatList title="Ανά κατηγορία έργου" items={d.perKathgoria} param="kathg" />
+          <StatList title="Ανά είδος σχεδίου" items={d.perEidos} param="eidos" />
+          <StatList title="Ανά μονάδα" items={d.perMonada} param="hstr" />
         </>
       ) : stats.isError ? (
         <p className="status-err">Σφάλμα: {(stats.error as Error).message}</p>

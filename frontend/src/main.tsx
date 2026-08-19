@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import './index.css'
-import { getMe, loginUrl, NotFoundError, UnauthorizedError } from './api/api'
+import { getMe, loginUrl, NetworkError, NotFoundError, UnauthorizedError } from './api/api'
 import { ErrorBoundary, NotFoundPage, StatusPage } from './pages/StatusPage'
 import App from './App'
 import Layout from './components/Layout'
@@ -28,9 +28,26 @@ function onUnauthorized(err: unknown) {
   location.assign(loginUrl())
 }
 
+// API unreachable anywhere (list, lookups, a save…) while already inside the app:
+// reset the gate's session query so RequireAuth re-runs /api/auth/me, fails the
+// same way, and renders the "Ο διακομιστής δεν αποκρίνεται" page with a retry —
+// instead of each screen showing a bare "Failed to fetch" line. When the API is
+// back, "Δοκιμή ξανά" re-renders the same URL (list filters, viewer id) unchanged.
+function onNetworkError(err: unknown) {
+  if (!(err instanceof NetworkError)) return
+  if (location.pathname.startsWith('/login')) return // login page has its own message
+  const me = queryClient.getQueryState(['me'])
+  if (!me || me.status === 'error') return // gate already shows the page (or never loaded)
+  queryClient.resetQueries({ queryKey: ['me'], exact: true })
+}
+function onError(err: unknown) {
+  onUnauthorized(err)
+  onNetworkError(err)
+}
+
 const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: onUnauthorized }),
-  mutationCache: new MutationCache({ onError: onUnauthorized }),
+  queryCache: new QueryCache({ onError }),
+  mutationCache: new MutationCache({ onError }),
   defaultOptions: {
     queries: {
       // Retrying a 401/404 only delays the message the user is going to see anyway.
@@ -60,6 +77,8 @@ function RequireAuth() {
           <button className="primary" disabled={me.isFetching} onClick={() => me.refetch()}>
             {me.isFetching ? 'Επανάληψη…' : 'Δοκιμή ξανά'}
           </button>
+          {/* Full load: fresh boot at the home page (also re-checks the session). */}
+          <button onClick={() => { location.href = '/' }}>Αρχική</button>
         </StatusPage>
       </main>
     )
