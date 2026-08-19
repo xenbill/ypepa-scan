@@ -73,7 +73,7 @@ Two credential backends, selected at startup by `Auth:DevLogin`:
 ### Application rights
 
 The five rights of the legacy WinForms app (MIS login DB, APPLIC_ID 83) are
-kept as-is — they are administered in the MIS user system, not in this app.
+kept as-is — they are not managed in this app.
 The login service returns them per user as `APP_RIGHTS` (`APP_RIGHT` name /
 `APP_FUNCTION_ID`); `Auth/AppRights.cs` maps them, puts them in the JWT as
 `right` claims, and registers one authorization policy per right (a policy
