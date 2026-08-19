@@ -67,8 +67,7 @@ Two credential backends, selected at startup by `Auth:DevLogin`:
   προσωπικού dropdown fetched from the service; the chosen category is
   carried in the JWT. Password change goes through the same service.
 - **`true` (dev)** — `DevAuthBackend`: single user `Auth:Username`/`Auth:Password`
-  (default `dev`/`dev`, display name `Auth:FullName` — a long MIS-style name in
-  the Development settings so the user menu is exercised); after a change-password the SHA-256 hash in `auth.json`
+  (default `dev`/`dev`); after a change-password the SHA-256 hash in `auth.json`
   takes precedence. Its rights come from `Auth:Rights` (see below).
 
 ### Application rights
