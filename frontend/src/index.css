@@ -752,6 +752,31 @@ table.results tr.skeleton-row:hover td { background: inherit; }
 .user-menu-version .mono { font-size: 12px; }
 
 .manual { max-width: 960px; margin: 0 auto; }
+.manual-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.manual-head .page-title { margin-bottom: 0; }
+/* Print view: every section in one column; the bar is screen-only. */
+.manual-print-bar {
+  margin: 0 0 14px; padding: 8px 12px; font-size: 13px;
+  background: var(--accent-wash); border: 1px solid #c3d4e8; border-radius: var(--radius);
+}
+.manual-print-bar button { margin-left: 8px; }
+.manual-print-title { font-size: 22px; margin: 0 0 14px; color: var(--accent-dark); }
+.manual-print-title small { font-size: 13px; color: var(--ink-soft); font-weight: normal; }
+.manual-print-section { margin-bottom: 18px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.manual-print-h2 { font-size: 17px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); color: var(--accent-dark); }
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff; color: #000; }
+  .appbar, .manual-print-bar { display: none !important; }
+  .page { padding: 0; }
+  .manual, .manual-print { max-width: none; }
+  .manual-print-section { border: 0; box-shadow: none; padding: 0 0 8px; margin: 0 0 14px; page-break-inside: auto; }
+  .manual-print-section + .manual-print-section { page-break-before: always; }
+  .manual-print-h2, .manual-card h3 { page-break-after: avoid; }
+  .manual-shot, .manual-table, .note-box, li { page-break-inside: avoid; }
+  .manual-shot img { box-shadow: none; max-width: 100%; }
+  a { color: inherit; text-decoration: none; }
+}
 .manual-tabs { flex-wrap: wrap; }
 .manual-card { padding: 22px 28px 26px; line-height: 1.55; }
 .manual-card h3 { font-size: 15px; margin: 18px 0 6px; color: var(--accent-dark); }

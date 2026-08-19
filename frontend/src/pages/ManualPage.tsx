@@ -84,7 +84,7 @@ const SECTIONS: Section[] = [
           <li><strong>Αρχική</strong> — στατιστικά του αρχείου και γρήγορες ενέργειες.</li>
           <li><strong>Σχέδια</strong> — αναζήτηση, λίστα, καταχώριση.</li>
           <li><strong>Λίστες επιλογών</strong> — συντήρηση κατηγοριών, ειδών, χώρων αποθήκευσης (μόνο διαχειριστές).</li>
-          <li><strong>Οδηγίες</strong> — αυτή η σελίδα.</li>
+          <li><strong>Οδηγίες</strong> — αυτή η σελίδα. Με <Btn>Εκτύπωση / PDF</Btn> (πάνω δεξιά) όλες οι καρτέλες μπαίνουν σε μία σελίδα και ανοίγει το παράθυρο εκτύπωσης του φυλλομετρητή· εκεί επιλέξτε «Αποθήκευση ως PDF» για να κρατήσετε τις οδηγίες ως αρχείο.</li>
           <li>Δεξιά, το ονοματεπώνυμό σας (όπως το δίνει το MIS) ανοίγει μενού με τα <strong>δικαιώματά</strong> σας, <strong>Αλλαγή κωδικού</strong>, <strong>Αποσύνδεση</strong> και την έκδοση της εφαρμογής.</li>
         </ul>
         <h3>Αρχική σελίδα</h3>
@@ -341,9 +341,52 @@ export default function ManualPage() {
   }
   const current = SECTIONS.find((s) => s.key === selected) ?? SECTIONS[0]
 
+  // «Εκτύπωση / PDF»: render every section (images eager), wait for the images, then
+  // open the browser's print dialog — the user picks a printer or «Αποθήκευση ως PDF».
+  // Back to the tabbed view when the dialog closes (afterprint).
+  const [printing, setPrinting] = useState(false)
+  useEffect(() => {
+    if (!printing) return
+    let cancelled = false
+    const imgs = Array.from(document.querySelectorAll<HTMLImageElement>('.manual-print img'))
+    imgs.forEach((i) => { i.loading = 'eager' }) // lazy ones off-screen would never load
+    const pending = imgs.filter((i) => !i.complete).map((i) => new Promise<void>((res) => { i.onload = i.onerror = () => res() }))
+    const done = () => setPrinting(false)
+    window.addEventListener('afterprint', done)
+    Promise.all(pending).then(() => {
+      if (cancelled) return
+      // Give the browser one frame to lay out the print view before the dialog opens.
+      setTimeout(() => window.print(), 50)
+    })
+    return () => { cancelled = true; window.removeEventListener('afterprint', done) }
+  }, [printing])
+
+  if (printing) {
+    return (
+      <div className="manual manual-print">
+        <div className="manual-print-bar">
+          Προετοιμασία εκτύπωσης… Στο παράθυρο εκτύπωσης επιλέξτε «Αποθήκευση ως PDF» για αρχείο PDF.{' '}
+          <button onClick={() => setPrinting(false)}>Επιστροφή</button>
+        </div>
+        <h1 className="manual-print-title">Σχέδια ΥΠΕΠΑ — Οδηγίες χρήσης <small>(έκδοση {APP_VERSION})</small></h1>
+        {SECTIONS.map((s) => (
+          <section key={s.key} className="manual-card manual-print-section">
+            <h2 className="manual-print-h2">{s.title}</h2>
+            {s.body}
+          </section>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="manual">
-      <h2 className="page-title">Οδηγίες χρήσης</h2>
+      <div className="manual-head">
+        <h2 className="page-title">Οδηγίες χρήσης</h2>
+        <button onClick={() => setPrinting(true)} title="Όλες οι οδηγίες σε μία σελίδα για εκτύπωση ή αποθήκευση ως PDF">
+          Εκτύπωση / PDF
+        </button>
+      </div>
       <p className="page-note">
         Πώς λειτουργεί η εφαρμογή: σύνδεση, αναζήτηση, προβολή και επεξεργασία σχεδίων, καταχώριση
         (απλή και μαζική), λίστες επιλογών. Η τελευταία καρτέλα δείχνει την έκδοση και το ιστορικό αλλαγών.

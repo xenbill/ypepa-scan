@@ -34,7 +34,7 @@ solution `Mis.YpepaScan.slnx`. Deployed DLL: `Mis.YpepaScan.Web.dll` (see
 | `/drawings` | Drawing list: filters, sort, page, page size (10/20/50/100, remembered) all live in the URL so Back/close return to the same list |
 | `/drawings/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
 | `/lookups` | Maintain lookup tables (categories, types, …) — `ADMIN` right only |
-| `/manual` | In-app user manual (Οδηγίες): tabs per area (Γενικά, Αναζήτηση & λίστα, Προβολή/Επεξεργασία, Καταχώριση incl. supported file types, Μαζική καταχώριση, Λίστες επιλογών) with screenshots, plus «Έκδοση & αλλαγές» (version + changelog). `?tab=version` deep-links a tab |
+| `/manual` | In-app user manual (Οδηγίες): tabs per area (Γενικά, Αναζήτηση & λίστα, Προβολή/Επεξεργασία, Καταχώριση incl. supported file types, Μαζική καταχώριση, Λίστες επιλογών) with screenshots, plus «Έκδοση & αλλαγές» (version + changelog). `?tab=version` deep-links a tab. «Εκτύπωση / PDF» renders all tabs in one column and opens the browser print dialog (print stylesheet; save as PDF from there) |
 | `/change-password` | Change password (MIS service or dev store) |
 | `*` | Proper 404 / error pages |
 
