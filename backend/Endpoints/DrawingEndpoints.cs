@@ -87,7 +87,7 @@ public static class DrawingEndpoints
         // are seekable (OracleBlob = random-access LOB reads), so this costs nothing.
         if (inline)
             return Results.Stream(opened.Value.Stream, mime, enableRangeProcessing: true);
-        var name = (row?.ArithmosSxed is { Length: > 0 } a ? a : $"sxedio-{id}") + ext;
+        var name = (row?.ArithmosSxed is { Length: > 0 } a ? a : $"drawing-{id}") + ext;
         foreach (var c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
         return Results.Stream(opened.Value.Stream, mime, name, enableRangeProcessing: true);
     }

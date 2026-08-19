@@ -65,7 +65,7 @@ public sealed class DevAuthBackend(IConfiguration cfg, IWebHostEnvironment env) 
 
     private static string Hash(string password)
         => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-            Encoding.UTF8.GetBytes("sxedia:" + password)));
+            Encoding.UTF8.GetBytes("ypepascan:" + password)));
 }
 
 /// <summary>Credential check against the MIS login service (LGNWS). Username = ΑΜΑ.</summary>

@@ -137,7 +137,7 @@ export async function downloadFile(id: number): Promise<void> {
   if (!r.ok) throw new Error(`Σφάλμα λήψης (${r.status})`)
   const disposition = r.headers.get('Content-Disposition') ?? ''
   const match = /filename\*?=(?:UTF-8'')?"?([^";]+)/i.exec(disposition)
-  const name = match ? decodeURIComponent(match[1]) : `sxedio-${id}`
+  const name = match ? decodeURIComponent(match[1]) : `drawing-${id}`
   const blob = await r.blob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

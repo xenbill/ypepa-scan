@@ -10,7 +10,7 @@ import MassImportForm from './components/MassImportForm'
 
 const SKELETON_WIDTHS = ['70%', '45%', '85%', '60%', '50%', '78%']
 const PAGE_SIZES = [10, 20, 50, 100] // server clamps to 100
-const PAGE_SIZE_KEY = 'sxedia.pageSize'
+const PAGE_SIZE_KEY = 'ypepascan.pageSize'
 function loadPageSize(): number {
   try {
     const v = Number(localStorage.getItem(PAGE_SIZE_KEY))

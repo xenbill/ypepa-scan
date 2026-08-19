@@ -28,7 +28,7 @@ public record AuthModeDto(bool DevLogin, IReadOnlyList<MisCategory> Categories);
 /// </summary>
 public static class JwtAuth
 {
-    public const string CookieName = "sxedia_auth";
+    public const string CookieName = "ypepascan_auth";
     public const string CategoryClaim = "Category";
     /// <summary>Unix seconds of the original login; carried across renewals to enforce the absolute cap.</summary>
     public const string SessionStartClaim = "SessionStart";

@@ -67,7 +67,7 @@ Two credential backends, selected at startup by `Auth:DevLogin`:
   takes precedence.
 
 Token plumbing is shared (`Auth/JwtAuth.cs`): `POST /api/auth/login` issues a
-signed JWT and sets it as an **HttpOnly, SameSite=Lax** cookie (`sxedia_auth`);
+signed JWT and sets it as an **HttpOnly, SameSite=Lax** cookie (`ypepascan_auth`);
 the response body is `{expiresAt, user}`. The SPA never sees the token — the
 browser sends the cookie on every same-origin request, so `/api/*` **and**
 `/tiles/*` (DZI tiles, thumbs, served by `Endpoints/TileEndpoints.cs`) all

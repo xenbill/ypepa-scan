@@ -10,7 +10,7 @@ Log.Logger = SerilogInstaller.CreateLogger();
 
 try
 {
-    Log.Information("Starting Sxedia (Σχεδιοθήκη) API");
+    Log.Information("Starting YpepaScan (Σχεδιοθήκη) API");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -83,15 +83,15 @@ try
     api.MapDrawingEndpoints();
     api.MapLookupEndpoints();
 
-    // SPA fallback so router URLs (/login, /sxedio/123) work on refresh/deep link.
+    // SPA fallback so router URLs (/login, /drawings/123) work on refresh/deep link.
     app.MapFallbackToFile("index.html");
 
     app.Run();
-    Log.Information("Sxedia API shut down gracefully");
+    Log.Information("YpepaScan API shut down gracefully");
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Sxedia API terminated unexpectedly");
+    Log.Fatal(ex, "YpepaScan API terminated unexpectedly");
 }
 finally
 {
