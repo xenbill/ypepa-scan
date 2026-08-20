@@ -169,11 +169,16 @@ exercised at realistic sizes.
   from npm via Vite — no internet access needed at runtime).
 - Files the bundled libvips cannot decode — notably TIFFs with **old-style JPEG
   compression** (tag 6, produced by 1990s-era scanners; the shipped libtiff has
-  no OJPEG codec) — fall back to **Magick.NET (ImageMagick)**: the original is
-  transcoded once to a temporary plain TIFF and tiled as usual, so such
-  drawings simply open (first view a few seconds slower, then cached like any
-  other). Only if both decoders fail is the file reported as unreadable
-  (HTTP 415 with a clear Greek message).
+  no OJPEG codec) — go through a fallback chain, cheapest first: (1) if the
+  TIFF wraps one complete JPEG interchange stream (tags 513/514 — the usual
+  OJPEG shape, and self-describing even when the TIFF tags contradict it),
+  that stream is extracted by byte copy and tiled directly; (2) otherwise the
+  original is transcoded once via **Magick.NET (ImageMagick)** to a temporary
+  plain TIFF and tiled as usual. Either way such drawings simply open (first
+  view a few seconds slower, then cached like any other). Only if every
+  decoder fails is the file reported as unreadable (HTTP 415 with a clear
+  Greek message), together with a logged `TIFF diagnostics:` line describing
+  what the file claims to be.
 - File type is detected by **magic bytes** (`Imaging/FileTypes.cs`) and
   reported in `GET /api/drawings/{id}`; unsupported types are rejected on
   import/view. PDFs are served directly from the store and shown with the

@@ -18,6 +18,74 @@ public static class TiffDiag
         catch (Exception e) { return $"(tiff-diag failed: {e.GetType().Name}: {e.Message})"; }
     }
 
+    /// <summary>
+    /// Old-style JPEG TIFFs (compression 6) usually wrap one complete JPEG
+    /// interchange stream (tags 513/514). libtiff's OJPEG shim rejects many of
+    /// them over tag-vs-stream contradictions — but the stream itself is
+    /// self-describing and decodes cleanly on its own. Copies it to
+    /// <paramref name="dstPath"/>; false when the file is not that shape.
+    /// </summary>
+    public static bool TryExtractOldJpeg(string srcPath, string dstPath)
+    {
+        try
+        {
+            using var fs = File.OpenRead(srcPath);
+            var hdr = new byte[8];
+            if (fs.Read(hdr, 0, 8) != 8) return false;
+            var le = hdr[0] == (byte)'I' && hdr[1] == (byte)'I';
+            if (!le && !(hdr[0] == (byte)'M' && hdr[1] == (byte)'M')) return false;
+            if (U16(hdr.AsSpan(2, 2), le) != 42) return false;
+            var ifd = U32(hdr.AsSpan(4, 4), le);
+            if (ifd > fs.Length - 2) return false;
+            fs.Seek(ifd, SeekOrigin.Begin);
+            var cntBuf = new byte[2];
+            if (fs.Read(cntBuf, 0, 2) != 2) return false;
+            int n = U16(cntBuf, le);
+            if (n == 0 || n > 512) return false;
+            var entries = new byte[n * 12];
+            if (fs.Read(entries, 0, entries.Length) != entries.Length) return false;
+
+            ulong compression = 0, jifOffset = 0, jifLength = 0;
+            for (var i = 0; i < n; i++)
+            {
+                var e = entries.AsSpan(i * 12, 12);
+                var tag = U16(e[..2], le);
+                if (tag is not (259 or 513 or 514)) continue;
+                var type = U16(e.Slice(2, 2), le);
+                if (U32(e.Slice(4, 4), le) != 1) continue;
+                var val = type switch { 3 => (ulong)U16(e.Slice(8, 2), le), 4 => U32(e.Slice(8, 4), le), _ => 0UL };
+                if (tag == 259) compression = val;
+                else if (tag == 513) jifOffset = val;
+                else jifLength = val;
+            }
+            if (compression != 6 || jifOffset == 0 || jifOffset >= (ulong)fs.Length) return false;
+
+            // A wrong/absent length degrades to "until EOF" — the stream carries
+            // its own end marker, decoders just stop there.
+            var available = (ulong)fs.Length - jifOffset;
+            var len = jifLength == 0 ? available : Math.Min(jifLength, available);
+            fs.Seek((long)jifOffset, SeekOrigin.Begin);
+            var soi = new byte[2];
+            if (fs.Read(soi, 0, 2) != 2 || soi[0] != 0xFF || soi[1] != 0xD8) return false; // no JPEG SOI marker
+
+            fs.Seek((long)jifOffset, SeekOrigin.Begin);
+            using var dst = File.Create(dstPath);
+            var buf = new byte[1 << 20];
+            for (var remaining = (long)len; remaining > 0;)
+            {
+                var r = fs.Read(buf, 0, (int)Math.Min(buf.Length, remaining));
+                if (r <= 0) break;
+                dst.Write(buf, 0, r);
+                remaining -= r;
+            }
+            return true;
+        }
+        catch
+        {
+            return false; // any surprise = "not extractable", the next fallback runs
+        }
+    }
+
     private static string DescribeCore(string path)
     {
         using var fs = File.OpenRead(path);

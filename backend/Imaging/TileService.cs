@@ -83,32 +83,22 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
                 }
                 catch (VipsException e)
                 {
-                    // libvips lacks some legacy codecs — notably TIFFs with old-style
-                    // JPEG compression (tag 6) from 1990s-era scanners. ImageMagick
-                    // reads those: transcode to a plain TIFF and retry the pyramid.
-                    log.LogWarning("Drawing {Id}: libvips could not decode the {Type} file ({Reason}); retrying via ImageMagick",
+                    log.LogWarning("Drawing {Id}: libvips could not decode the {Type} file ({Reason}); trying fallbacks",
                         id, type, FirstLine(e.Message));
-                    var convertedPath = Path.Combine(Dir(id), "converted.tif");
                     try
                     {
-                        Transcode(originalPath, convertedPath);
-                        info = PrepareDzi(id, convertedPath);
-                        log.LogInformation("Drawing {Id}: decoded via the ImageMagick fallback", id);
+                        info = DecodeFallback(id, type, originalPath);
                     }
                     catch (Exception inner) when (inner is VipsException or MagickException)
                     {
-                        // Unreadable by both decoders: genuinely corrupt/truncated.
-                        log.LogWarning(inner, "Drawing {Id}: {Type} file could not be decoded (fallback failed too)", id, type);
+                        // Unreadable by every decoder: genuinely corrupt/truncated.
+                        log.LogWarning(inner, "Drawing {Id}: {Type} file could not be decoded (all fallbacks failed)", id, type);
                         // Log what the file claims to be, so undecodable files on
                         // servers we cannot pull samples from stay diagnosable.
                         if (type == "tiff")
                             log.LogWarning("Drawing {Id}: TIFF diagnostics: {Diag}", id, TiffDiag.Describe(originalPath));
                         throw new UnsupportedFileException(type,
                             $"Το αρχείο ({FileTypes.Label(type)}) δεν μπορεί να αναγνωσθεί — πιθανόν κατεστραμμένο ή ελλιπές.");
-                    }
-                    finally
-                    {
-                        if (File.Exists(convertedPath)) File.Delete(convertedPath);
                     }
                 }
             }
@@ -273,6 +263,56 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
 
         log.LogInformation("Drawing {Id}: pyramid ready", id);
         return new ViewInfo("dzi", $"/tiles/{id}/img.dzi", $"/tiles/{id}/thumb.jpg", w, h);
+    }
+
+    /// <summary>
+    /// Decode chain for files libvips rejects, cheapest first:
+    /// 1. Old-style JPEG TIFFs (compression 6) usually wrap one complete JPEG
+    ///    interchange stream. libtiff's OJPEG shim rejects many of them over
+    ///    tag-vs-stream contradictions (stage drawings 47431/47432: grayscale
+    ///    tags around a color JPEG), but the stream is self-describing — a
+    ///    plain byte copy of it decodes natively in vips.
+    /// 2. Full transcode via Magick.NET (libtiff *with* the OJPEG shim, plus
+    ///    every other format the slim libvips build lacks).
+    /// Throws the last decoder's exception when everything fails.
+    /// </summary>
+    private ViewInfo DecodeFallback(long id, string type, string originalPath)
+    {
+        if (type == "tiff")
+        {
+            var jpg = Path.Combine(Dir(id), "embedded.jpg");
+            try
+            {
+                if (TiffDiag.TryExtractOldJpeg(originalPath, jpg))
+                {
+                    var info = PrepareDzi(id, jpg);
+                    log.LogInformation("Drawing {Id}: decoded via the embedded old-style JPEG stream", id);
+                    return info;
+                }
+            }
+            catch (VipsException e)
+            {
+                log.LogWarning("Drawing {Id}: embedded JPEG stream did not decode either ({Reason})",
+                    id, FirstLine(e.Message));
+            }
+            finally
+            {
+                if (File.Exists(jpg)) File.Delete(jpg);
+            }
+        }
+
+        var converted = Path.Combine(Dir(id), "converted.tif");
+        try
+        {
+            Transcode(originalPath, converted);
+            var info = PrepareDzi(id, converted);
+            log.LogInformation("Drawing {Id}: decoded via the ImageMagick fallback", id);
+            return info;
+        }
+        finally
+        {
+            if (File.Exists(converted)) File.Delete(converted);
+        }
     }
 
     /// <summary>
