@@ -128,6 +128,33 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
         }
     }
 
+    /// <summary>
+    /// Drops a drawing's cached pyramid. Called on soft delete so stale tiles
+    /// stop being servable immediately (the /view cache-hit path never re-checks
+    /// the store). Takes the generation gate so a purge never interleaves with a
+    /// pyramid being built; otherwise best effort — meta.json goes first, so a
+    /// partly-deleted folder is a cache miss and gets orphan-swept later.
+    /// </summary>
+    public async Task PurgeAsync(long id)
+    {
+        var gate = _locks.GetOrAdd(id, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync();
+        try
+        {
+            if (File.Exists(MetaPath(id))) File.Delete(MetaPath(id));
+            if (Directory.Exists(Dir(id))) Directory.Delete(Dir(id), recursive: true);
+        }
+        catch (Exception e)
+        {
+            // A tile may be open in a viewer this very second (Windows lock).
+            log.LogDebug(e, "Tile cache: could not fully purge drawing {Id} on delete", id);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
     private void Touch(long id)
     {
         try { File.SetLastWriteTimeUtc(MetaPath(id), DateTime.UtcNow); } catch { /* best effort */ }

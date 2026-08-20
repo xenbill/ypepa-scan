@@ -198,6 +198,11 @@ exercised at realistic sizes.
   `MAZIKI_KATAXWRISI=1`.
 - **Edit / delete** — metadata of an existing record can be edited
   (`PUT`) and a record deleted (`DELETE`, with confirmation) from the viewer.
+  Deletion is a **soft delete on the header row only** (`DELETED=1` on
+  `C16PE_SXEDIO`); the blob is never touched, so clearing the flag restores
+  the drawing. The drawing's cached tile pyramid is purged on delete, so the
+  tiles stop being servable immediately (a restored drawing regenerates its
+  pyramid on first view).
 - **Lookups** — categories/types etc. are maintained in-app (`/lookups`).
 - **Not in the web app**: direct scanning from a scanner and printing — users
   keep the Windows (dedicated scan) app / scanner or printer software for those

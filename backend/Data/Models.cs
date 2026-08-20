@@ -95,7 +95,8 @@ public interface IDrawingStore
     /// <summary>Updates the metadata of an existing drawing (file untouched). False if id not found.</summary>
     Task<bool> UpdateAsync(long id, ImportMeta meta, CancellationToken ct = default);
 
-    /// <summary>Soft delete: sets DELETED=1 on header + blob rows; nothing is physically removed.</summary>
+    /// <summary>Soft delete: sets DELETED=1 on the header row only; the blob row is never
+    /// touched, so nothing is physically removed and clearing the flag restores the drawing.</summary>
     Task<bool> SoftDeleteAsync(long id, CancellationToken ct = default);
 
     Task<ArchiveStats> GetStatsAsync(CancellationToken ct = default);
