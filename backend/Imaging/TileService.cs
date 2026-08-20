@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using ImageMagick;
 using NetVips;
 using Mis.YpepaScan.Web.Data;
 
@@ -76,20 +77,43 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
             ViewInfo info;
             try
             {
-                info = PrepareDzi(id, originalPath);
+                try
+                {
+                    info = PrepareDzi(id, originalPath);
+                }
+                catch (VipsException e)
+                {
+                    // libvips lacks some legacy codecs — notably TIFFs with old-style
+                    // JPEG compression (tag 6) from 1990s-era scanners. ImageMagick
+                    // reads those: transcode to a plain TIFF and retry the pyramid.
+                    log.LogWarning("Drawing {Id}: libvips could not decode the {Type} file ({Reason}); retrying via ImageMagick",
+                        id, type, FirstLine(e.Message));
+                    var convertedPath = Path.Combine(Dir(id), "converted.tif");
+                    try
+                    {
+                        Transcode(originalPath, convertedPath);
+                        info = PrepareDzi(id, convertedPath);
+                        log.LogInformation("Drawing {Id}: decoded via the ImageMagick fallback", id);
+                    }
+                    catch (Exception inner) when (inner is VipsException or MagickException)
+                    {
+                        // Unreadable by both decoders: genuinely corrupt/truncated.
+                        log.LogWarning(inner, "Drawing {Id}: {Type} file could not be decoded (fallback failed too)", id, type);
+                        throw new UnsupportedFileException(type,
+                            $"Το αρχείο ({FileTypes.Label(type)}) δεν μπορεί να αναγνωσθεί — πιθανόν κατεστραμμένο ή ελλιπές.");
+                    }
+                    finally
+                    {
+                        if (File.Exists(convertedPath)) File.Delete(convertedPath);
+                    }
+                }
             }
-            catch (VipsException e)
+            finally
             {
-                // Right magic number, unreadable content (truncated/corrupt scan).
+                // The blob copy (and any converted temp) was only needed as decode
+                // input; keeping it would roughly double the cache footprint.
                 if (File.Exists(originalPath)) File.Delete(originalPath);
-                log.LogWarning(e, "Drawing {Id}: {Type} file could not be decoded", id, type);
-                throw new UnsupportedFileException(type,
-                    $"Το αρχείο ({FileTypes.Label(type)}) δεν μπορεί να αναγνωσθεί — πιθανόν κατεστραμμένο ή ελλιπές.");
             }
-
-            // The blob copy was only needed as vips input; keeping it would roughly
-            // double the cache footprint.
-            File.Delete(originalPath);
 
             // Atomic publish: readers must never see a half-written meta.json.
             var tmp = MetaPath(id) + ".tmp";
@@ -141,7 +165,22 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
             foreach (var e in entries.OrderBy(e => e.LastUse))
             {
                 if (total <= _maxBytes) break;
-                if (Path.GetFileName(e.Dir) == keepId.ToString()) continue;
+                var name = Path.GetFileName(e.Dir);
+                if (name == keepId.ToString()) continue;
+
+                // Evict-while-regenerating race: without this, a drawing picked as the
+                // LRU victim could be re-opened mid-delete and publish a pyramid with
+                // tiles missing. Take the drawing's generation gate non-blockingly and
+                // hold it for the whole delete — a concurrent view request then waits
+                // on the gate, sees a cache miss and regenerates cleanly. If the gate
+                // is already held (generation in progress), skip this round. GetOrAdd
+                // (not TryGetValue) so both sides always contend on the same instance.
+                SemaphoreSlim? gate = null;
+                if (long.TryParse(name, out var dirId))
+                {
+                    gate = _locks.GetOrAdd(dirId, _ => new SemaphoreSlim(1, 1));
+                    if (!gate.Wait(0)) continue;
+                }
                 try
                 {
                     // Unpublish first: if the recursive delete fails half-way (a tile
@@ -153,12 +192,16 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
                     Directory.Delete(e.Dir, recursive: true);
                     total -= e.Size;
                     log.LogInformation("Tile cache: evicted drawing {Dir} ({Mb:0.0} MB, last used {LastUse:u})",
-                        Path.GetFileName(e.Dir), e.Size / 1048576.0, e.LastUse);
+                        name, e.Size / 1048576.0, e.LastUse);
                 }
                 catch (Exception ex)
                 {
                     // Files may be open (tiles being served right now) — skip, retry next round.
                     log.LogDebug(ex, "Tile cache: could not evict {Dir}", e.Dir);
+                }
+                finally
+                {
+                    gate?.Release();
                 }
             }
         }
@@ -199,5 +242,27 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
 
         log.LogInformation("Drawing {Id}: pyramid ready", id);
         return new ViewInfo("dzi", $"/tiles/{id}/img.dzi", $"/tiles/{id}/thumb.jpg", w, h);
+    }
+
+    /// <summary>
+    /// Fallback decode via Magick.NET for files the bundled libvips cannot read
+    /// (its libtiff has no OJPEG codec, so old-style JPEG TIFFs fail). Writes a
+    /// plain LZW TIFF that libvips handles. Unlike vips this decodes the whole
+    /// image into memory — acceptable for the rare legacy file, and only on the
+    /// first view (the resulting pyramid is cached like any other).
+    /// </summary>
+    private static void Transcode(string srcPath, string dstPath)
+    {
+        // First frame only — same page the vips path would show for a multi-page TIFF.
+        using var img = new MagickImage(srcPath);
+        img.Settings.Compression = CompressionMethod.LZW;
+        img.Write(dstPath, MagickFormat.Tif);
+    }
+
+    /// <summary>vips error messages are multi-line walls; keep logs to the gist.</summary>
+    private static string FirstLine(string s)
+    {
+        var i = s.IndexOf('\n');
+        return (i < 0 ? s : s[..i]).Trim();
     }
 }

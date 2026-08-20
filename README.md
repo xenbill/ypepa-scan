@@ -166,11 +166,19 @@ exercised at realistic sizes.
   **Deep Zoom (DZI) tile pyramid** (~1–3 s) into `<Cache:Dir>/<id>/`; after
   that the drawing opens instantly and zooms like a map (OpenSeadragon, bundled
   from npm via Vite — no internet access needed at runtime).
+- Files the bundled libvips cannot decode — notably TIFFs with **old-style JPEG
+  compression** (tag 6, produced by 1990s-era scanners; the shipped libtiff has
+  no OJPEG codec) — fall back to **Magick.NET (ImageMagick)**: the original is
+  transcoded once to a temporary plain TIFF and tiled as usual, so such
+  drawings simply open (first view a few seconds slower, then cached like any
+  other). Only if both decoders fail is the file reported as unreadable
+  (HTTP 415 with a clear Greek message).
 - File type is detected by **magic bytes** (`Imaging/FileTypes.cs`) and
   reported in `GET /api/drawings/{id}`; unsupported types are rejected on
   import/view. PDFs are served directly from the store and shown with the
   browser's native PDF viewer.
-- The tile cache is capped at **1 GB** (`Cache:MaxMegabytes`, default 1024):
+- The tile cache is capped at **1 GB** (`Cache:MaxMegabytes` — set to 1024 in
+  the shipped `appsettings.json`; the code default is 500):
   past the cap, the least-recently-viewed drawings are evicted automatically
   and regenerate on next view (~1–3 s). A 10000×15000 scan costs ~6–10 MB of
   tiles, so the default cap keeps roughly the last 100–150 viewed drawings
