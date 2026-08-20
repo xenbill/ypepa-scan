@@ -1,38 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Skeleton, Spinner } from './components/Loading'
-import { formatDate, getLookups, hasRight, searchDrawings, type Sort, type UserInfo } from './api/api'
+import { Spinner } from './components/Loading'
+import { getLookups, hasRight, searchDrawings, type Sort, type UserInfo } from './api/api'
 import { emptyFilters, type Filters } from './api/types'
 import ComboSelect from './components/ComboSelect'
+import ResultsTable from './components/ResultsTable'
 import ImportForm from './components/ImportForm'
 import MassImportForm from './components/MassImportForm'
 
-const SKELETON_WIDTHS = ['70%', '45%', '85%', '60%', '50%', '78%']
 const PAGE_SIZES = [10, 20, 50, 100] // server clamps to 100
 const PAGE_SIZE_KEY = 'ypepascan.pageSize'
 function loadPageSize(): number {
   try {
     const v = Number(localStorage.getItem(PAGE_SIZE_KEY))
-    return PAGE_SIZES.includes(v) ? v : 20
-  } catch { return 20 } // storage disabled/full: just use the default
+    return PAGE_SIZES.includes(v) ? v : 10
+  } catch { return 10 } // storage disabled/full: just use the default
 }
 
-// Column set and order mirror the legacy "Αναζήτηση σχεδίων" list.
-const COLUMNS: { key: string; label: string; sortable: boolean }[] = [
-  { key: 'kodikosErg', label: 'Κωδ. Έργου', sortable: true },
-  { key: 'arithmosSxed', label: 'Αρ. Σχεδίου', sortable: true },
-  { key: 'kathgoriaErg', label: 'Κατηγορία', sortable: true },
-  { key: 'ypokathgoriaErg', label: 'Υποκατηγορία', sortable: true },
-  { key: 'monada', label: 'Μονάδα', sortable: true },
-  { key: 'titlosErg', label: 'Υπομονάδα', sortable: true },
-  { key: 'titlosSxed', label: 'Τίτλος Σχεδ.', sortable: true },
-  { key: 'eidosSxed', label: 'Είδος Σχεδίου', sortable: true },
-  { key: 'xorosApoth', label: 'Αποθήκ.', sortable: true },
-  { key: 'perigrafhSxed', label: 'Περιγραφή Σχεδίου', sortable: true },
-  { key: 'perigrafhErg', label: 'Περιγραφή Έργου', sortable: true },
-  { key: 'dateIns', label: 'Εισαγωγή', sortable: true },
-]
 
 const FILTER_KEYS = Object.keys(emptyFilters) as (keyof Filters)[]
 
@@ -183,57 +168,13 @@ export default function App() {
 
       <section className={'card table-card' + (refetching ? ' is-refetching' : '')} aria-busy={searchQuery.isFetching}>
         {refetching && <div className="table-busy"><Spinner size={13} /> Αναζήτηση…</div>}
-        <div className="table-scroll">
-          <table className="results">
-            <thead>
-              <tr>
-                {COLUMNS.map((c) => (
-                  <th key={c.key}
-                      className={c.sortable ? 'sortable' : undefined}
-                      onClick={c.sortable ? () => toggleSort(c.key) : undefined}>
-                    {c.label}
-                    {sort?.key === c.key && <span className="sort-arrow">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
-                  </th>
-                ))}
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {initialLoading && Array.from({ length: 8 }, (_, i) => (
-                <tr key={'sk' + i} className="skeleton-row" aria-hidden="true">
-                  {COLUMNS.map((c, j) => (
-                    <td key={c.key}><Skeleton width={SKELETON_WIDTHS[(i + j) % SKELETON_WIDTHS.length]} height={12} /></td>
-                  ))}
-                  <td><Skeleton width={64} height={22} /></td>
-                </tr>
-              ))}
-              {(result?.items ?? []).map((d) => (
-                <tr key={d.sxedioId}>
-                  <td className="mono">{d.kodikosErg}</td>
-                  <td>
-                    <a className="mono" href={`/drawings/${d.sxedioId}`}
-                       onClick={(e) => { e.preventDefault(); openDrawing(d.sxedioId) }}>
-                      {d.arithmosSxed || '—'}
-                    </a>
-                  </td>
-                  <td>{d.kathgoriaErg}</td>
-                  <td>{d.ypokathgoriaErg}</td>
-                  <td>{d.monada}</td>
-                  <td className="trunc" title={d.titlosErg ?? ''}>{d.titlosErg}</td>
-                  <td className="trunc" title={d.titlosSxed ?? ''}>{d.titlosSxed}</td>
-                  <td>{d.eidosSxed && <span className="badge">{d.eidosSxed}</span>}</td>
-                  <td>{d.xorosApoth}</td>
-                  <td className="trunc" title={d.perigrafhSxed ?? ''}>{d.perigrafhSxed}</td>
-                  <td className="trunc" title={d.perigrafhErg ?? ''}>{d.perigrafhErg}</td>
-                  <td className="mono">{formatDate(d.dateIns)}</td>
-                  <td>
-                    <button onClick={() => openDrawing(d.sxedioId)}>Προβολή</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResultsTable
+          items={result?.items ?? []}
+          sort={sort}
+          onToggleSort={toggleSort}
+          onOpen={openDrawing}
+          loading={initialLoading}
+        />
         {result?.items.length === 0 && (
           <div className="empty-note">
             <svg width="72" height="56" viewBox="0 0 72 56" fill="none" aria-hidden="true">

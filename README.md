@@ -32,7 +32,7 @@ settings: always-on app pool, preload/warm-up, upload limit).
 |---|---|
 | `/login` | Login (username = ΑΜΑ, password, κατηγορία προσωπικού when the MIS backend is active) |
 | `/` | Home: counts per category / type / unit — each row links to the filtered list |
-| `/drawings` | Drawing list: filters, sort, page, page size (10/20/50/100, remembered) all live in the URL so Back/close return to the same list |
+| `/drawings` | Drawing list (`components/ResultsTable.tsx`): filters, sort, page, page size (10/20/50/100, default 10, remembered) all live in the URL so Back/close return to the same list. Columns are drag-resizable from the header edge; widths persist in localStorage (`ypepascan.colWidths`), double-click a grip or «Επαναφορά πλάτους στηλών» restores automatic sizing |
 | `/drawings/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
 | `/lookups` | Maintain lookup tables (categories, types, …) — `ADMIN` right only |
 | `/manual` | In-app user manual (Οδηγίες): tabs per area (Γενικά, Αναζήτηση & λίστα, Προβολή/Επεξεργασία, Καταχώριση incl. supported file types, Μαζική καταχώριση, Λίστες επιλογών) with screenshots, plus «Έκδοση & αλλαγές» (version + changelog). `?tab=version` deep-links a tab. «Εκτύπωση / PDF» renders all tabs in one column and opens the browser print dialog (print stylesheet; save as PDF from there) |

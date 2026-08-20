@@ -479,6 +479,31 @@ table.results a:hover { text-decoration: underline; }
 table.results td button { padding: 4px 11px; font-size: 13px; }
 table.results th.sortable { cursor: pointer; user-select: none; }
 table.results th.sortable:hover { color: var(--accent); }
+
+/* Column resizing: a grip on each header's right edge. Headers keep their
+   automatic width until the user drags one (then <colgroup> + fixed layout). */
+table.results th { position: sticky; }
+table.results th .col-grip {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 7px; cursor: col-resize;
+  user-select: none;
+}
+table.results th .col-grip::after {
+  content: ''; position: absolute; top: 20%; bottom: 20%; right: 3px;
+  border-right: 1px solid var(--border);
+}
+table.results th:hover .col-grip::after { border-right-color: var(--accent); }
+table.results.is-resized { table-layout: fixed; }
+/* A column the user widened must be able to show more text, so the default
+   truncation cap gives way to the dragged width. */
+table.results.is-resized td.trunc { max-width: none; }
+table.results.is-resized td {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+table.results.is-dragging { cursor: col-resize; user-select: none; }
+/* Only shown once the user has resized something. */
+.cols-reset { padding: 0 14px 8px; text-align: right; }
+.cols-reset button { padding: 3px 10px; font-size: 12px; }
 .sort-arrow { margin-left: 4px; font-size: 10px; color: var(--accent); }
 table.results td.trunc {
   max-width: 150px;

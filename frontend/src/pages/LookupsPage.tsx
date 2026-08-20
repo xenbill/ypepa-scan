@@ -75,7 +75,7 @@ function LookupsAdmin() {
         parents={selected === 'ypokatigoria' ? lk.kathgoriaErg : undefined}
       />
       <div className="note-box">
-        <span className="note-label">Σημειωση</span>
+        <span className="note-label">Σημείωση</span>
         Η μετονομασία μιας τιμής εμφανίζεται σε όλα τα σχέδια που τη χρησιμοποιούν —
         παλαιά και νέα. Διαγραφή επιτρέπεται μόνο αν η τιμή δεν χρησιμοποιείται.
         Οι Μονάδες προέρχονται από τη δομή μονάδων και δεν επεξεργάζονται εδώ.
