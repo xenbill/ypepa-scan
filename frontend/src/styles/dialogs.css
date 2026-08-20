@@ -1,0 +1,28 @@
+/* Modal shell + the small confirmation dialog. */
+
+/* The confirmation dialog comes FIRST on purpose. `.confirm-modal h3` and
+   `.modal h3` have the same specificity and hit the same element, so the later
+   one wins: today the heading is the generic 17px/14px one, and swapping these
+   two blocks would silently resize every «Θέλετε να συνεχίσετε;» dialog. Only
+   `.modal.confirm-modal` below wins on its own (two classes), which is why the
+   box size is written that way. */
+.modal.confirm-modal { max-width: 390px; padding: 18px 20px; }
+.confirm-modal h3 { font-size: 16px; margin-bottom: 8px; }
+.confirm-modal p { margin: 0; color: var(--ink-soft); font-size: 13.5px; line-height: 1.5; }
+.confirm-actions { margin-top: 16px; }
+.confirm-actions button { font-size: 14px; padding: 7px 15px; }
+.confirm-modal button.danger { background: var(--redline); border-color: var(--redline); color: #fff; }
+.confirm-modal button.danger:hover { background: #97371a; }
+
+.modal-backdrop {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(12, 22, 35, 0.55); z-index: 20;
+}
+.modal {
+  background: var(--card);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(12, 22, 35, 0.3);
+  max-width: 760px; margin: 48px auto; padding: 22px 24px;
+  max-height: 88vh; overflow-y: auto;
+}
+.modal h3 { font-size: 17px; margin-bottom: 14px; }

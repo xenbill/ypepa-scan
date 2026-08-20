@@ -1,0 +1,97 @@
+/* Design tokens: the whole palette, both themes. Everything else only reads
+   these variables — change a colour here and the app follows. */
+
+:root {
+  --paper: #edece7;
+  --card: #fdfdfb;
+  --border: #d1d2c9;
+  --border-soft: #e2e3da;
+  --ink: #1e2a36;
+  --ink-soft: #5b6672;
+  --accent: #1c5590;
+  --accent-dark: #153f6c;
+  --accent-wash: #e7eef6;
+  --blueprint: #132c49;        /* app chrome: deep blueprint blue */
+  --blueprint-soft: #1e3c5f;
+  --grid-line: rgba(255, 255, 255, 0.055);
+  --redline: #b8441f;          /* drafting redline — destructive actions */
+  --ok: #2e7d46;
+  --radius: 4px;
+  --font-display: "Bahnschrift", "Segoe UI Semibold", "Segoe UI", system-ui, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
+  --shadow: 0 1px 2px rgba(20, 32, 45, 0.07), 0 1px 1px rgba(20, 32, 45, 0.04);
+  /* secondary surfaces */
+  --hover-wash: #f4f5ef;       /* row/link hover, table head, code boxes */
+  --row-alt: #f7f8f3;          /* zebra rows */
+  --soft-bg: #f6f6f2;          /* kbd/btn chips in the manual */
+  --input-bg: #fff;
+  --btn-bg: #fff;
+  --btn-hover: #f3f4ef;
+  --border-hover: #adb2a8;
+  --pop-bg: #fff;              /* dropdown lists */
+  --accent-border: #c3d4e8;    /* borders on accent-wash boxes */
+  --badge-border: #b7c9dc;
+  --drop-bg: #f3f6fa;
+  --grid-tint: rgba(28, 85, 144, 0.04);
+  --focus-ring: rgba(28, 85, 144, 0.16);
+  --focus-ring-strong: rgba(28, 85, 144, 0.28);
+  --mark: rgba(28, 85, 144, 0.3); /* hero crop marks */
+  --danger-border: #dcb3a4;
+  --danger-wash: #f9ece6;
+  --danger-bg: #fbf0ec;
+  --danger-edge: #e4bfb2;
+  --danger-text: #7a2c14;
+  --warn: #8a5a00;
+  --muted-icon: #a8b2ba;
+  --skeleton: #e8e9e1;
+  --skeleton-hi: #f4f5ef;
+  --on-accent: #fff;           /* text on accent / blueprint */
+  --pop-shadow: 0 8px 20px rgba(20, 32, 45, 0.18);
+  color-scheme: light;
+}
+
+/* Dark theme: set by theme.ts on <html data-theme="dark"> (manual choice or the OS
+   setting in «Αυτόματο»). The app bar stays blueprint blue; paper/cards go to dark
+   slate, the accent gets lighter for contrast. Only variables change here. */
+[data-theme="dark"] {
+  --paper: #22272e;
+  --card: #2a3038;
+  --border: #454e59;
+  --border-soft: #384049;
+  --ink: #e6eaef;
+  --ink-soft: #a6b0bc;
+  --accent: #3377bd;           /* fills: primary buttons, bars, active tabs */
+  --accent-dark: #8abbec;      /* text: headings, links, primary hover */
+  --accent-wash: #263548;
+  --blueprint: #14293f;
+  --blueprint-soft: #25476b;
+  --redline: #e0704b;
+  --ok: #5cb878;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.2);
+  --hover-wash: #333b45;
+  --row-alt: #2e343d;
+  --soft-bg: #333b45;
+  --input-bg: #262c34;
+  --btn-bg: #333b45;
+  --btn-hover: #3e4752;
+  --border-hover: #57626f;
+  --pop-bg: #303740;
+  --accent-border: #3a567a;
+  --badge-border: #48678a;
+  --drop-bg: #263548;
+  --grid-tint: rgba(140, 180, 220, 0.06);
+  --focus-ring: rgba(100, 160, 220, 0.35);
+  --focus-ring-strong: rgba(100, 160, 220, 0.5);
+  --mark: rgba(138, 187, 236, 0.45);
+  --danger-border: #7a4534;
+  --danger-wash: #442c22;
+  --danger-bg: #38241d;
+  --danger-edge: #7a4534;
+  --danger-text: #f3c7b7;
+  --warn: #e0b060;
+  --muted-icon: #7b8693;
+  --skeleton: #333b45;
+  --skeleton-hi: #3e4752;
+  --pop-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}

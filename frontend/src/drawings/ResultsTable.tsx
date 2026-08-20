@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Skeleton } from './Loading'
-import { formatDate, type Sort } from '../api/api'
+import { Skeleton } from '../components/Loading'
+import { readStoredJson, writeStoredJson } from '../lib/storage'
+import { type Sort } from '../api/drawings'
+import { formatDate } from '../lib/format'
 import type { DrawingRow } from '../api/types'
 
 const SKELETON_WIDTHS = ['70%', '45%', '85%', '60%', '50%', '78%']
@@ -28,16 +30,13 @@ type Widths = Record<string, number>
 
 /** Column widths the user dragged, remembered per browser (like theme/page size). */
 function loadWidths(): Widths {
-  try {
-    const raw = localStorage.getItem(WIDTHS_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw) as Widths
-    // Keep only known columns with sane numbers — stale/garbage entries are dropped.
-    const clean: Widths = {}
-    for (const c of COLUMNS)
-      if (typeof parsed[c.key] === 'number' && parsed[c.key] >= MIN_WIDTH) clean[c.key] = parsed[c.key]
-    return clean
-  } catch { return {} } // storage disabled or corrupt: automatic widths
+  const parsed = readStoredJson<Widths>(WIDTHS_KEY)
+  if (!parsed) return {} // nothing stored, storage disabled, or corrupt: automatic widths
+  // Keep only known columns with sane numbers — stale/garbage entries are dropped.
+  const clean: Widths = {}
+  for (const c of COLUMNS)
+    if (typeof parsed[c.key] === 'number' && parsed[c.key] >= MIN_WIDTH) clean[c.key] = parsed[c.key]
+  return clean
 }
 
 type Props = {
@@ -66,7 +65,7 @@ export default function ResultsTable({ items, sort, onToggleSort, onOpen, loadin
 
   const persist = useCallback((next: Widths) => {
     setWidths(next)
-    try { localStorage.setItem(WIDTHS_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+    writeStoredJson(WIDTHS_KEY, next)
   }, [])
 
   // Drag lives on the document so the pointer can leave the 6px grip (and the
@@ -86,7 +85,7 @@ export default function ResultsTable({ items, sort, onToggleSort, onOpen, loadin
       swallowClick.current = true
       setTimeout(() => { swallowClick.current = false }, 0) // after this click event
       setWidths((prev) => {
-        try { localStorage.setItem(WIDTHS_KEY, JSON.stringify(prev)) } catch { /* ignore */ }
+        writeStoredJson(WIDTHS_KEY, prev) // save the width the drag ended on
         return prev
       })
     }

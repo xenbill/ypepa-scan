@@ -16,15 +16,40 @@ settings: always-on app pool, preload/warm-up, upload limit).
   from `wwwroot`. `Auth/` (JWT + login backends), `Data/` (Oracle/Demo stores,
   DTOs), `Endpoints/` (drawings, lookups, tiles), `Imaging/` (libvips tiling,
   file-type sniffing), `Utils/` (Serilog).
-- `frontend` — React + TypeScript (Vite): `src/api` (fetch helpers + types),
-  `src/pages`, `src/components`, `src/viewer` (OpenSeadragon viewer). TanStack
-  Query for data fetching/caching, React Router. `npm run build` type-checks
-  and outputs into `backend/wwwroot`, so the deployable is still the single
-  .NET app (`dotnet publish` runs the frontend build automatically).
-  Lightweight modern CSS (no animations), ES2015 output for older PCs; React
-  and OpenSeadragon are bundled — no CDN needed. For frontend development:
-  `npm run dev` (serves on :5173, proxies `/api` and `/tiles` to the .NET app
-  on :5580).
+- `frontend` — React + TypeScript (Vite). TanStack Query for data
+  fetching/caching, React Router. `npm run build` type-checks and outputs into
+  `backend/wwwroot`, so the deployable is still the single .NET app
+  (`dotnet publish` runs the frontend build automatically). Lightweight modern
+  CSS (no animations), ES2015 output for older PCs; React and OpenSeadragon are
+  bundled — no CDN needed. For frontend development: `npm run dev` (serves on
+  :5173, proxies `/api` and `/tiles` to the .NET app on :5580). Layout under
+  `src`:
+  - `api/` — one module per area of the API: `http.ts` (fetch wrapper, error
+    classes, the only place a failed response becomes an `Error`), `auth.ts`
+    (session + rights), `drawings.ts`, `lookups.ts`, `types.ts` (the DTOs).
+  - `app/` — the shell: `queryClient.ts` (React Query + the app-wide 401 /
+    "server unreachable" policy), `RequireAuth.tsx` (session gate),
+    `routes.tsx` (route table, lazy routes). `main.tsx` only boots.
+  - `drawings/` — the Σχέδια screen: `DrawingsPage.tsx`, `useListState.ts`
+    (filters/sort/page in the URL, page size in localStorage),
+    `DrawingFilters.tsx`, `ResultsTable.tsx`, `Pager.tsx`, `EmptyResults.tsx`;
+    `meta/` (the drawing's fields, defined once — see below); `import/`
+    («Καταχώριση» and «Μαζική καταχώριση», with `useUploadQueue.ts` running the
+    batch).
+  - `viewer/` — OpenSeadragon viewer + its metadata edit form.
+  - `pages/` — the remaining screens (login, home, lookups, manual, change
+    password, status/404). `components/` — what more than one screen uses
+    (layout, combo select, loading, `Modal.tsx` = the dialog shell: backdrop,
+    click-outside, the Escape stack; the confirm dialog). `lib/` — `format.ts`
+    (el-GR dates/sizes), `storage.ts` (localStorage that cannot throw).
+  - `styles/` — the stylesheet, split by role; `src/index.css` imports the
+    parts and is what fixes their cascade order (see the comment there).
+  - The metadata of a drawing is described once in `drawings/meta/fields.ts`
+    (label, length, which pick list, and the conversions to FormData /
+    `DrawingMeta`); the three screens that edit it — Καταχώριση, Μαζική
+    καταχώριση, Επεξεργασία in the viewer — render from it through
+    `meta/MetaForm.tsx` and only decide the layout. Add or rename a field
+    there and all three follow.
 
 ## Pages / routes
 
@@ -32,7 +57,7 @@ settings: always-on app pool, preload/warm-up, upload limit).
 |---|---|
 | `/login` | Login (username = ΑΜΑ, password, κατηγορία προσωπικού when the MIS backend is active) |
 | `/` | Home: counts per category / type / unit — each row links to the filtered list |
-| `/drawings` | Drawing list (`components/ResultsTable.tsx`): filters, sort, page, page size (10/20/50/100, default 10, remembered) all live in the URL so Back/close return to the same list. Columns are drag-resizable from the header edge; widths persist in localStorage (`ypepascan.colWidths`), double-click a grip or «Επαναφορά πλάτους στηλών» restores automatic sizing |
+| `/drawings` | Drawing list (`drawings/`): filters, sort, page, page size (10/20/50/100, default 10, remembered) all live in the URL so Back/close return to the same list. Columns are drag-resizable from the header edge; widths persist in localStorage (`ypepascan.colWidths`), double-click a grip or «Επαναφορά πλάτους στηλών» restores automatic sizing |
 | `/drawings/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
 | `/lookups` | Maintain lookup tables (categories, types, …) — `ADMIN` right only |
 | `/manual` | In-app user manual (Οδηγίες): tabs per area (Γενικά, Αναζήτηση & λίστα, Προβολή/Επεξεργασία, Καταχώριση incl. supported file types, Μαζική καταχώριση, Λίστες επιλογών) with screenshots, plus «Έκδοση & αλλαγές» (version + changelog). `?tab=version` deep-links a tab. «Εκτύπωση / PDF» renders all tabs in one column and opens the browser print dialog (print stylesheet; save as PDF from there) |

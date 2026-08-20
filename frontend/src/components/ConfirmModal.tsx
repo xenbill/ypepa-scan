@@ -1,3 +1,5 @@
+import Modal from './Modal'
+
 interface ConfirmModalProps {
   title: string
   message: string
@@ -11,17 +13,15 @@ export default function ConfirmModal({
   title, message, confirmLabel = 'Διαγραφή', busy, onConfirm, onCancel,
 }: ConfirmModalProps) {
   return (
-    <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onCancel()}>
-      <div className="modal confirm-modal">
-        <h3>{title}</h3>
-        <p>{message}</p>
-        <p className="confirm-actions">
-          <button className="danger" disabled={busy} onClick={onConfirm} autoFocus>
-            {busy ? 'Παρακαλώ περιμένετε…' : confirmLabel}
-          </button>{' '}
-          <button onClick={onCancel}>Ακύρωση</button>
-        </p>
-      </div>
-    </div>
+    <Modal onDismiss={onCancel} className="confirm-modal">
+      <h3>{title}</h3>
+      <p>{message}</p>
+      <p className="confirm-actions">
+        <button className="danger" disabled={busy} onClick={onConfirm} autoFocus>
+          {busy ? 'Παρακαλώ περιμένετε…' : confirmLabel}
+        </button>{' '}
+        <button onClick={onCancel}>Ακύρωση</button>
+      </p>
+    </Modal>
   )
 }

@@ -1,0 +1,42 @@
+/* Reset, page shell and text primitives shared by every screen. */
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; }
+body {
+  font-family: "Segoe UI", system-ui, Arial, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  /* graph-paper hint: two tiled 1px gradients, painted once */
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid-tint) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-tint) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+h1, h2, h3, h4 { margin: 0; font-weight: 600; font-family: var(--font-display); }
+small { color: var(--ink-soft); }
+
+/* codes, drawing numbers, dates, counts — plotter lettering */
+.mono { font-family: var(--font-mono); font-size: 13px; }
+
+main.page { padding: 20px 24px 48px; max-width: 1680px; margin: 0 auto; }
+.page-title { font-size: 18px; margin-bottom: 4px; }
+.page-note { color: var(--ink-soft); margin: 0 0 16px; font-size: 13px; max-width: 720px; }
+
+/* uppercase technical eyebrow with a rule running to the edge */
+.filters-title, .home-card h2, .lookup-card h3 {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display);
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.filters-title::after, .home-card h2::after, .lookup-card h3::after {
+  content: ""; flex: 1; border-top: 1px solid var(--border-soft);
+}
+
+/* inline result text (saved / failed / cancelled) */
+.status-ok { color: var(--ok); }
+.status-err { color: var(--redline); }
+.status-warn { color: var(--warn); }

@@ -1,0 +1,130 @@
+/* App chrome: the blueprint app bar, nav, user menu and the text-size zoom. */
+
+.appbar {
+  background-color: var(--blueprint);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: #fff;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 24px;
+  border-bottom: 2px solid var(--accent-dark);
+  position: sticky; top: 0; z-index: 5; /* below viewer (10) and modals (20) */
+}
+.brand { display: flex; align-items: center; gap: 14px; color: inherit; text-decoration: none; }
+.brand:hover { text-decoration: none; }
+.brand:hover .brand-mark { filter: brightness(1.12); }
+.brand-mark {
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center; /* flex (not grid): img height:100% resolves against the box */
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 14px; letter-spacing: 0.1em;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  outline: 1px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+  border-radius: 2px;
+  padding: 3px;
+}
+.brand-mark img { height: 100%; width: auto; max-width: 100%; object-fit: contain; display: block; }
+.brand h1 { font-size: 17px; line-height: 1.2; letter-spacing: 0.02em; }
+.brand-sub {
+  display: block; font-size: 10px; color: #8fa5c0;
+  letter-spacing: 0.18em; font-family: var(--font-display);
+}
+.nav { display: flex; gap: 10px; flex: 1; margin-left: 30px; }
+.nav a {
+  font-family: var(--font-display);
+  color: #b9c9db; text-decoration: none;
+  padding: 9px 10px 7px; font-size: 13.5px; letter-spacing: 0.04em;
+  border-bottom: 2px solid transparent;
+}
+.nav a:hover { color: #fff; }
+.nav a.active { color: #fff; border-bottom-color: #8fc1f2; }
+
+.appbar-right { position: relative; display: flex; align-items: center; color: #b9c9db; font-size: 13px; }
+.user-menu-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: transparent; color: #c6d1e0; border: 1px solid transparent;
+  padding: 4px 8px 4px 5px;
+}
+.user-menu-btn strong { color: #fff; }
+/* Full MIS display name in the bar; clipped with an ellipsis so it can't crowd the nav. */
+.user-menu-name { max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 900px) { .user-menu-name { max-width: 160px; } }
+.user-menu-btn:hover, .user-menu-btn.open, .user-menu-btn:focus {
+  background: var(--blueprint-soft); color: #fff; border-color: transparent; box-shadow: none;
+}
+.user-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18); color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 1; padding: 0 0 1px; text-align: center; /* caps sit low in the em box; nudge up */
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+.user-caret { font-size: 18px; line-height: 1; opacity: 0.85; margin-left: -2px; }
+.user-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
+  min-width: 200px; width: max-content; max-width: 340px; padding: 6px;
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 3px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+@media (max-width: 420px) { .user-menu { max-width: calc(100vw - 24px); } }
+.user-menu-theme {
+  padding: 6px 10px 8px; margin-bottom: 4px; border-bottom: 1px solid var(--border-soft);
+}
+.user-menu-theme-label {
+  display: block; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink-soft); margin-bottom: 5px;
+}
+.theme-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+.user-menu .theme-switch button {
+  width: auto; padding: 4px 9px; font-size: 12px; border: 0; border-radius: 0;
+  background: var(--btn-bg); color: var(--ink);
+}
+.user-menu .theme-switch button + button { border-left: 1px solid var(--border); }
+.user-menu .theme-switch button.active { background: var(--accent); color: var(--on-accent); }
+.user-menu .theme-switch button:hover:not(.active) { background: var(--btn-hover); color: var(--ink); }
+
+/* Text size (theme.ts sets <html data-size>): CSS zoom on the chrome, page content and
+   the viewer's side panel — not on the drawing canvas, and not on the login page. */
+[data-size="large"] .appbar, [data-size="large"] main.page,
+[data-size="large"] .viewer-head, [data-size="large"] .viewer-meta { zoom: 1.1; }
+[data-size="xlarge"] .appbar, [data-size="xlarge"] main.page,
+[data-size="xlarge"] .viewer-head, [data-size="xlarge"] .viewer-meta { zoom: 1.2; }
+@media print { [data-size] main.page { zoom: 1; } }
+.user-menu button {
+  display: block; width: 100%; text-align: left;
+  background: transparent; border: 0; color: var(--ink);
+  padding: 7px 10px; border-radius: 2px; font-size: 13px;
+}
+.user-menu button:hover { background: var(--accent-wash); color: var(--accent-dark); }
+.user-menu button:disabled { opacity: 0.6; }
+.user-menu-rights {
+  padding: 6px 10px 8px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.user-menu-rights-title {
+  font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink-soft); margin-bottom: 4px;
+}
+.user-menu-rights ul { list-style: none; margin: 0; padding: 0; }
+.user-menu-rights li {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; line-height: 1.7; white-space: nowrap;
+}
+.user-menu-rights li.missing { color: var(--ink-soft); opacity: 0.6; }
+.user-menu-rights .right-mark { display: inline-block; width: 12px; text-align: center; font-weight: 700; }
+.user-menu-rights li.granted .right-mark { color: var(--accent-dark); }
+
+
+/* version line at the bottom of the user menu */
+.user-menu-version {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 7px 10px; margin-top: 4px; border-top: 1px solid var(--border-soft);
+  color: var(--ink-soft); font-size: 12px; text-decoration: none; border-radius: 2px;
+}
+.user-menu-version:hover { background: var(--accent-wash); color: var(--accent-dark); }
+.user-menu-version .mono { font-size: 12px; }

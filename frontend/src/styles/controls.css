@@ -1,0 +1,112 @@
+/* Reusable controls: inputs, buttons, cards, form tables, tabs, notes, combo. */
+
+input, select, textarea {
+  font: inherit; color: var(--ink);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 7px 10px;
+  transition: border-color 0.1s;
+}
+input:hover, select:hover, textarea:hover { border-color: var(--border-hover); }
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+button {
+  font: inherit; font-weight: 500; cursor: pointer;
+  background: var(--btn-bg); color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 7px 14px;
+  transition: background-color 0.1s, border-color 0.1s;
+}
+button:hover { background: var(--btn-hover); border-color: var(--border-hover); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+button:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring-strong); }
+
+/* segmented toolbar group (viewer zoom/rotate) */
+.btn-group { display: inline-flex; }
+.btn-group button { border-radius: 0; margin-left: -1px; }
+.btn-group button:first-child { border-radius: 3px 0 0 3px; margin-left: 0; }
+.btn-group button:last-child { border-radius: 0 3px 3px 0; }
+
+button.danger { border-color: var(--danger-border); color: var(--redline); }
+button.danger:hover { background: var(--danger-wash); border-color: var(--redline); }
+
+/* ---------- cards ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- form tables (import dialogs) ---------- */
+.form-table { width: 100%; }
+.form-table th { text-align: right; padding: 5px 8px; white-space: nowrap; font-weight: normal; color: var(--ink-soft); font-size: 13px; }
+.form-table td { padding: 5px 8px; }
+.form-table input, .form-table select, .form-table textarea { width: 100%; }
+th.section-row {
+  text-align: left !important;
+  font-family: var(--font-display);
+  font-size: 11.5px; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--accent-dark) !important;
+  border-left: 3px solid var(--accent);
+  padding: 4px 10px !important;
+}
+
+/* ---------- underline tabs (λίστες επιλογών, οδηγίες), matching the app-bar nav ---------- */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tabs .tab {
+  background: transparent; border: none; border-radius: 0;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  padding: 8px 12px;
+  font-family: var(--font-display); font-size: 13.5px; letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+.tabs .tab:hover { background: transparent; color: var(--accent); }
+.tabs .tab.active { color: var(--accent-dark); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-count { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); margin-left: 2px; }
+
+/* ---------- drawing-style note box ---------- */
+.note-box {
+  margin-top: 14px;
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13px; line-height: 1.5; color: var(--ink);
+}
+.note-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent-dark);
+  margin-bottom: 3px;
+}
+
+/* ---------- combo: autocomplete select (τόνοι/κεφαλαία αδιάφορα) ---------- */
+.combo { position: relative; }
+.combo input { width: 100%; padding-right: 26px; }
+.combo-caret {
+  position: absolute; right: 9px; top: 50%; margin-top: -8px;
+  font-size: 10px; line-height: 16px; color: var(--ink-soft);
+  padding: 0 4px; cursor: pointer;
+}
+.combo-list {
+  position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 30;
+  background: var(--pop-bg);
+  border: 1px solid var(--border); border-radius: 3px;
+  box-shadow: var(--pop-shadow);
+  max-height: 260px; overflow-y: auto;
+  padding: 3px;
+}
+.combo-item { padding: 6px 9px; border-radius: 2px; cursor: pointer; }
+.combo-item.hi { background: var(--accent-wash); }
+.combo-item.selected { font-weight: 600; color: var(--accent-dark); }
+.combo-all { color: var(--ink-soft); border-bottom: 1px solid var(--border-soft); border-radius: 2px 2px 0 0; }
+.combo-none { padding: 8px 9px; color: var(--ink-soft); font-size: 13px; }

@@ -1,0 +1,19 @@
+/* Λίστες επιλογών (lookup administration). */
+
+.lookup-single { max-width: 640px; margin: 0 auto; }
+
+.lookup-card { padding: 16px 18px; }
+.lookup-card h3 { margin-bottom: 10px; }
+.lookup-card table { width: 100%; border-collapse: collapse; }
+.lookup-card tbody tr:hover td { background: var(--hover-wash); }
+.lookup-card td { padding: 6px 4px; border-bottom: 1px solid var(--border-soft); }
+.lookup-empty { margin: 4px 0 10px; color: var(--ink-soft); font-size: 13px; }
+
+.lookup-card td input, .lookup-card td select { width: 100%; margin-top: 4px; }
+.lookup-card td:first-child { width: 100%; }
+.lookup-actions { white-space: nowrap; text-align: right; }
+.lookup-actions button { padding: 3px 10px; font-size: 12.5px; margin-left: 4px; }
+.lookup-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; color: var(--ink-soft); }
+.lookup-filter select { min-width: 260px; }
+.lookup-add { display: flex; gap: 8px; margin-top: 12px; }
+.lookup-add input { flex: 1; }
