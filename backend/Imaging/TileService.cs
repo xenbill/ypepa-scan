@@ -99,6 +99,10 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
                     {
                         // Unreadable by both decoders: genuinely corrupt/truncated.
                         log.LogWarning(inner, "Drawing {Id}: {Type} file could not be decoded (fallback failed too)", id, type);
+                        // Log what the file claims to be, so undecodable files on
+                        // servers we cannot pull samples from stay diagnosable.
+                        if (type == "tiff")
+                            log.LogWarning("Drawing {Id}: TIFF diagnostics: {Diag}", id, TiffDiag.Describe(originalPath));
                         throw new UnsupportedFileException(type,
                             $"Το αρχείο ({FileTypes.Label(type)}) δεν μπορεί να αναγνωσθεί — πιθανόν κατεστραμμένο ή ελλιπές.");
                     }
