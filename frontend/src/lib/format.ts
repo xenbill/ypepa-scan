@@ -14,7 +14,8 @@ export function formatMb(bytes: number | null | undefined): string {
 
 const FILE_TYPE_LABELS: Record<string, string> = {
   pdf: 'PDF', tiff: 'TIFF', jpeg: 'JPEG', png: 'PNG', gif: 'GIF', bmp: 'BMP', webp: 'WebP',
-  dwg: 'DWG (AutoCAD)', zip: 'ZIP/Office', ole: 'Word/Excel (παλαιό)', unknown: 'Άγνωστος',
+  dwg: 'DWG (AutoCAD)', dxf: 'DXF (AutoCAD)', dgn: 'DGN (MicroStation)', dwf: 'DWF (Autodesk)',
+  dwfx: 'DWFX (Autodesk)', zip: 'ZIP/Office', ole: 'Word/Excel (παλαιό)', unknown: 'Άγνωστος',
 }
 
 export function formatFileType(type: string | null | undefined): string {

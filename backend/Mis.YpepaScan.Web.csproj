@@ -13,6 +13,12 @@
   </Target>
 
   <ItemGroup>
+    <!-- Demo-mode sample drawings (seeded by DemoSeeder); not under wwwroot, so included explicitly. -->
+    <Content Include="demo-assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspose.CAD" Version="26.7.0" />
     <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="Magick.NET-Q8-x64" Version="14.16.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />

@@ -16,6 +16,7 @@ try
 
     builder.Host.UseSerilog();
 
+    builder.Services.AddSingleton<CadRaster>();
     builder.Services.AddSingleton<TileService>();
     var mode = builder.Configuration["Storage:Mode"] ?? "Demo";
     if (mode.Equals("Oracle", StringComparison.OrdinalIgnoreCase))

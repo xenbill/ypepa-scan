@@ -78,7 +78,7 @@ public static class DrawingEndpoints
         var head = new byte[FileTypes.HeadLength];
         var n = await opened.Value.Stream.ReadAsync(head, ct);
         opened.Value.Stream.Seek(0, SeekOrigin.Begin);
-        var (ext, mime) = FileTypes.Sniff(head.AsSpan(0, n)) switch
+        var (ext, mime) = FileTypes.Resolve(FileTypes.Sniff(head.AsSpan(0, n)), opened.Value.Stream) switch
         {
             "pdf" => (".pdf", "application/pdf"),
             "tiff" => (".tif", "image/tiff"),
@@ -88,6 +88,10 @@ public static class DrawingEndpoints
             "bmp" => (".bmp", "image/bmp"),
             "webp" => (".webp", "image/webp"),
             "dwg" => (".dwg", "application/acad"),
+            "dxf" => (".dxf", "image/vnd.dxf"),
+            "dgn" => (".dgn", "image/vnd.dgn"),
+            "dwf" => (".dwf", "model/vnd.dwf"),
+            "dwfx" => (".dwfx", "model/vnd.dwfx+xps"),
             "zip" => (".zip", "application/zip"),
             _ => (".bin", "application/octet-stream"),
         };
@@ -121,7 +125,7 @@ public static class DrawingEndpoints
         // Reject by content, not by extension/Content-Type (both are client-supplied and unreliable).
         var head = new byte[FileTypes.HeadLength];
         var n = await stream.ReadAsync(head, ct);
-        var type = FileTypes.Sniff(head.AsSpan(0, n));
+        var type = FileTypes.Resolve(FileTypes.Sniff(head.AsSpan(0, n)), stream);
         if (!FileTypes.IsSupported(type))
         {
             Log.Information("Import rejected for {User}: {FileName} sniffed as '{Type}'", user.Identity?.Name, file.FileName, type);

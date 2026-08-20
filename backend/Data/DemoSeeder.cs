@@ -5,13 +5,15 @@ namespace Mis.YpepaScan.Web.Data;
 
 /// <summary>
 /// Creates sample data for demo mode: lookup tables, a handful of drawing records
-/// and synthetic 10000x15000 bilevel TIFFs (the size class of the real scans).
+/// and synthetic 10000x15000 bilevel TIFFs (the size class of the real scans),
+/// plus a real AutoCAD DXF from demo-assets/ so the CAD path can be exercised.
 /// </summary>
 public static class DemoSeeder
 {
-    public static void Seed(string dir)
+    public static void Seed(string dir, string assetsDir)
     {
         Directory.CreateDirectory(Path.Combine(dir, "files"));
+        var cadSample = Path.Combine(assetsDir, "mechanical-sample.dxf");
 
         var db = new
         {
@@ -61,6 +63,10 @@ public static class DemoSeeder
                     TitlosErg = "Επέκταση Τροχοδρόμου", TitlosSxed = "Οριζοντιογραφία",
                     PerigrafhSxed = "Τοπογραφικό διάγραμμα ζώνης επέκτασης", Hmer = new DateTime(2015, 3, 18),
                     EidosId = 4, KathgId = 2, YpokatId = 3, XorosId = 3, HstrId = 104, DateIns = new DateTime(2015, 3, 30), UserIns = "DEMO" },
+                new DemoDrawingStore.DemoRow { SxedioId = 5, KodikosErg = "ΕΡΓ-2022-058", ArithmosSxed = "ΗΜ-058-03",
+                    TitlosErg = "Εκσυγχρονισμός Αντλιοστασίου", TitlosSxed = "Μηχανολογική Διάταξη (AutoCAD)",
+                    PerigrafhSxed = "Μηχανολογικό σχέδιο σε μορφή DXF, όπως παραδόθηκε από τον μελετητή", Hmer = new DateTime(2022, 9, 6),
+                    EidosId = 3, KathgId = 3, XorosId = 2, HstrId = 103, DateIns = new DateTime(2022, 9, 14), UserIns = "DEMO" },
             },
         };
 
@@ -70,7 +76,12 @@ public static class DemoSeeder
         foreach (var d in db.Drawings)
         {
             var path = Path.Combine(dir, "files", $"{d.SxedioId}.tif");
-            if (!File.Exists(path))
+            if (File.Exists(path)) continue;
+            // Drawing 5 is the shipped AutoCAD sample (stored under the store's usual
+            // name — the extension is irrelevant, types are sniffed from content).
+            if (d.SxedioId == 5 && File.Exists(cadSample))
+                File.Copy(cadSample, path);
+            else if (d.SxedioId != 5)
                 GenerateTiff(path, seed: (int)d.SxedioId);
         }
     }

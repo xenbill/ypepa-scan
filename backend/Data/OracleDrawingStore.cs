@@ -170,7 +170,7 @@ public sealed class OracleDrawingStore : IDrawingStore
         if (row is null || row.SizeBytes is null) return row;
         // Magic-number sniff: only the first bytes of the BLOB, no full read.
         var head = await con.ExecuteScalarAsync<byte[]>(
-            $@"select dbms_lob.substr(b.SXEDIO, 12, 1) from {_owner}.C16PE_SXEDIO_BLOB b
+            $@"select dbms_lob.substr(b.SXEDIO, {FileTypes.HeadLength}, 1) from {_owner}.C16PE_SXEDIO_BLOB b
                 where b.SXEDIO_ID = :id and rownum = 1", new { id });
         return row with { FileType = head is null ? "unknown" : FileTypes.Sniff(head) };
     }

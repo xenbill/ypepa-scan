@@ -55,7 +55,7 @@ public sealed class DemoDrawingStore : IDrawingStore
             : cfg["Demo:Dir"]!;
         Directory.CreateDirectory(Path.Combine(_dir, "files"));
         if (!File.Exists(DbPath))
-            DemoSeeder.Seed(_dir);
+            DemoSeeder.Seed(_dir, Path.Combine(env.ContentRootPath, "demo-assets"));
     }
 
     private string DbPath => Path.Combine(_dir, "demo.json");

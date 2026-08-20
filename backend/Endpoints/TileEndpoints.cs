@@ -28,10 +28,10 @@ public static class TileEndpoints
             if (!File.Exists(full))
                 return Results.NotFound();
 
-            // A drawing's tiles/dzi/thumb never change for a given id (eviction
-            // regenerates identical content), so let the browser keep them for a
-            // year and skip re-requesting on every view. "private": authorized
-            // content must not land in shared proxy caches.
+            // Tiles/dzi/thumb are immutable per pyramid build — TileService stamps
+            // a ?v=<build time> on the URLs it hands out, so a rebuilt pyramid gets
+            // fresh URLs and the year-long cache below can never serve stale tiles.
+            // "private": authorized content must not land in shared proxy caches.
             http.Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
             if (!ContentTypes.TryGetContentType(full, out var contentType))
