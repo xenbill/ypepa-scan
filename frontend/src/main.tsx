@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode, Suspense } from 'react'
 import { LoadingBlock } from './components/Loading'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -10,11 +10,15 @@ import { ErrorBoundary, NotFoundPage, StatusPage } from './pages/StatusPage'
 import App from './App'
 import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
-import LookupsPage from './pages/LookupsPage'
-import ManualPage from './pages/ManualPage'
 import LoginPage from './pages/LoginPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
-import Viewer from './viewer/Viewer'
+
+// Heavy, rarely-first screens load as separate chunks so the initial bundle —
+// which older PCs must download AND parse before the login page paints — stays
+// small: the viewer drags in OpenSeadragon, the manual is a book of text.
+const LookupsPage = lazy(() => import('./pages/LookupsPage'))
+const ManualPage = lazy(() => import('./pages/ManualPage'))
+const Viewer = lazy(() => import('./viewer/Viewer'))
 
 // Session expired (401) anywhere — a list refetch, a tile, a save, an upload — lands
 // here once: drop all cached data and go to the login page, remembering where we were.
@@ -109,6 +113,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ErrorBoundary>
+          <Suspense fallback={<LoadingBlock />}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route element={<RequireAuth />}>
@@ -124,6 +129,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/drawings/:id" element={<ViewerRoute />} />
             </Route>
           </Routes>
+          </Suspense>
         </ErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>
