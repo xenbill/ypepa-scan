@@ -5,15 +5,14 @@
     Older browsers: no matchMedia / prefers-color-scheme → «Αυτόματο» means light;
     matchMedia.addListener is used (addEventListener on MediaQueryList is newer). */
 
+import { clearStored, readStored, writeStored } from './lib/storage'
+
 export type ThemePref = 'auto' | 'light' | 'dark'
 const KEY = 'ypepascan.theme'
 const MQ = '(prefers-color-scheme: dark)'
 
 export function getThemePref(): ThemePref {
-  try {
-    const v = localStorage.getItem(KEY)
-    return v === 'light' || v === 'dark' ? v : 'auto'
-  } catch { return 'auto' }
+  return readStored(KEY, (v) => (v === 'light' || v === 'dark' ? v : null)) ?? 'auto'
 }
 
 function osDark(): boolean {
@@ -30,10 +29,9 @@ export function applyTheme(pref: ThemePref = getThemePref()): void {
 }
 
 export function setThemePref(pref: ThemePref): void {
-  try {
-    if (pref === 'auto') localStorage.removeItem(KEY)
-    else localStorage.setItem(KEY, pref)
-  } catch { /* storage disabled: the choice lasts for this page load */ }
+  // Storage disabled: the choice simply lasts for this page load.
+  if (pref === 'auto') clearStored(KEY)
+  else writeStored(KEY, pref)
   applyTheme(pref)
 }
 
@@ -48,10 +46,7 @@ export type TextSize = 'normal' | 'large' | 'xlarge'
 const SIZE_KEY = 'ypepascan.fontSize'
 
 export function getTextSize(): TextSize {
-  try {
-    const v = localStorage.getItem(SIZE_KEY)
-    return v === 'large' || v === 'xlarge' ? v : 'normal'
-  } catch { return 'normal' }
+  return readStored(SIZE_KEY, (v) => (v === 'large' || v === 'xlarge' ? v : null)) ?? 'normal'
 }
 
 export function applyTextSize(size: TextSize = getTextSize()): void {
@@ -60,10 +55,8 @@ export function applyTextSize(size: TextSize = getTextSize()): void {
 }
 
 export function setTextSize(size: TextSize): void {
-  try {
-    if (size === 'normal') localStorage.removeItem(SIZE_KEY)
-    else localStorage.setItem(SIZE_KEY, size)
-  } catch { /* storage disabled: lasts for this page load */ }
+  if (size === 'normal') clearStored(SIZE_KEY)
+  else writeStored(SIZE_KEY, size)
   applyTextSize(size)
 }
 

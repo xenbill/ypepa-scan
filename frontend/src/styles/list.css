@@ -1,0 +1,114 @@
+/* Σχέδια: the search filters, the results table and the pager. */
+
+.list-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.list-head .page-title { margin-bottom: 0; }
+
+/* ---------- filters ---------- */
+.filters { padding: 16px 18px; margin-bottom: 16px; }
+.filters-title { margin-bottom: 12px; }
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 12px 14px;
+  align-items: end;
+}
+.filter-grid > .field { grid-column: span 2; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > span { font-size: 12px; color: var(--ink-soft); }
+.field input, .field select { width: 100%; }
+.filter-grid > .field-search { grid-column: span 3; }
+.filter-buttons { display: flex; gap: 8px; grid-column: span 3; }
+
+/* ---------- results table ---------- */
+.table-card { position: relative; overflow: hidden; }
+.table-scroll { overflow-x: auto; }
+table.results { width: 100%; border-collapse: collapse; }
+table.results th {
+  position: sticky; top: 0;
+  text-align: left; padding: 10px 12px;
+  font-family: var(--font-display);
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--ink-soft); font-weight: 600;
+  background: var(--hover-wash);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+table.results td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+table.results tbody tr:last-child td { border-bottom: none; }
+table.results tbody tr:nth-child(even) td { background: var(--row-alt); }
+table.results tbody tr:hover td { background: var(--accent-wash); }
+table.results a { color: var(--accent); font-weight: 600; text-decoration: none; }
+table.results a:hover { text-decoration: underline; }
+table.results td button { padding: 4px 11px; font-size: 13px; }
+table.results th.sortable { cursor: pointer; user-select: none; }
+table.results th.sortable:hover { color: var(--accent); }
+
+/* Column resizing: a grip on each header's right edge. Headers keep their
+   automatic width until the user drags one (then <colgroup> + fixed layout). */
+table.results th { position: sticky; }
+table.results th .col-grip {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 7px; cursor: col-resize;
+  user-select: none;
+}
+table.results th .col-grip::after {
+  content: ''; position: absolute; top: 20%; bottom: 20%; right: 3px;
+  border-right: 1px solid var(--border);
+}
+table.results th:hover .col-grip::after { border-right-color: var(--accent); }
+table.results.is-resized { table-layout: fixed; }
+/* A column the user widened must be able to show more text, so the default
+   truncation cap gives way to the dragged width. */
+table.results.is-resized td.trunc { max-width: none; }
+table.results.is-resized td {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+table.results.is-dragging { cursor: col-resize; user-select: none; }
+/* Only shown once the user has resized something. */
+.cols-reset { padding: 0 14px 8px; text-align: right; }
+.cols-reset button { padding: 3px 10px; font-size: 12px; }
+.sort-arrow { margin-left: 4px; font-size: 10px; color: var(--accent); }
+table.results td.trunc {
+  max-width: 150px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+table.results td:last-child { white-space: nowrap; text-align: right; }
+
+/* drafting-stamp style tag */
+.badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--badge-border);
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+  background: var(--accent-wash); color: var(--accent-dark);
+  white-space: nowrap;
+}
+
+.empty-note { padding: 40px 36px 44px; text-align: center; color: var(--ink-soft); }
+.empty-note svg { display: block; margin: 0 auto 14px; color: var(--muted-icon); }
+.empty-note p { margin: 0 0 6px; }
+.empty-note strong { color: var(--ink); font-family: var(--font-display); font-size: 15px; }
+.empty-note button { margin-top: 12px; }
+
+.pager {
+  display: flex; justify-content: center; align-items: center; gap: 16px;
+  padding: 14px 0 0;
+  color: var(--ink-soft); font-size: 13px;
+}
+.pager span { font-variant-numeric: tabular-nums; }
+.pager-size { margin-left: 12px; }
+.pager-size select { font-size: 13px; padding: 3px 6px; margin-left: 2px; }
+
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 1000px) {
+  .filter-grid { grid-template-columns: repeat(2, 1fr); }
+  .filter-grid > .field { grid-column: span 1; }
+  .filter-grid > .field-search, .filter-buttons { grid-column: span 2; }
+}

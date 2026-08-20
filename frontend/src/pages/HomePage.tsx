@@ -1,6 +1,7 @@
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { getStats, hasRight, type StatItem, type UserInfo } from '../api/api'
+import { hasRight, type UserInfo } from '../api/auth'
+import { getStats, type StatItem } from '../api/drawings'
 import { Skeleton, SkeletonLines } from '../components/Loading'
 
 /** Compact single-hue bar list: sorted desc, proportional bars, scrolls past ~8 rows.

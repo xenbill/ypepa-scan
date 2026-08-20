@@ -16,15 +16,40 @@ settings: always-on app pool, preload/warm-up, upload limit).
   from `wwwroot`. `Auth/` (JWT + login backends), `Data/` (Oracle/Demo stores,
   DTOs), `Endpoints/` (drawings, lookups, tiles), `Imaging/` (libvips tiling,
   file-type sniffing), `Utils/` (Serilog).
-- `frontend` — React + TypeScript (Vite): `src/api` (fetch helpers + types),
-  `src/pages`, `src/components`, `src/viewer` (OpenSeadragon viewer). TanStack
-  Query for data fetching/caching, React Router. `npm run build` type-checks
-  and outputs into `backend/wwwroot`, so the deployable is still the single
-  .NET app (`dotnet publish` runs the frontend build automatically).
-  Lightweight modern CSS (no animations), ES2015 output for older PCs; React
-  and OpenSeadragon are bundled — no CDN needed. For frontend development:
-  `npm run dev` (serves on :5173, proxies `/api` and `/tiles` to the .NET app
-  on :5580).
+- `frontend` — React + TypeScript (Vite). TanStack Query for data
+  fetching/caching, React Router. `npm run build` type-checks and outputs into
+  `backend/wwwroot`, so the deployable is still the single .NET app
+  (`dotnet publish` runs the frontend build automatically). Lightweight modern
+  CSS (no animations), ES2015 output for older PCs; React and OpenSeadragon are
+  bundled — no CDN needed. For frontend development: `npm run dev` (serves on
+  :5173, proxies `/api` and `/tiles` to the .NET app on :5580). Layout under
+  `src`:
+  - `api/` — one module per area of the API: `http.ts` (fetch wrapper, error
+    classes, the only place a failed response becomes an `Error`), `auth.ts`
+    (session + rights), `drawings.ts`, `lookups.ts`, `types.ts` (the DTOs).
+  - `app/` — the shell: `queryClient.ts` (React Query + the app-wide 401 /
+    "server unreachable" policy), `RequireAuth.tsx` (session gate),
+    `routes.tsx` (route table, lazy routes). `main.tsx` only boots.
+  - `drawings/` — the Σχέδια screen: `DrawingsPage.tsx`, `useListState.ts`
+    (filters/sort/page in the URL, page size in localStorage),
+    `DrawingFilters.tsx`, `ResultsTable.tsx`, `Pager.tsx`, `EmptyResults.tsx`;
+    `meta/` (the drawing's fields, defined once — see below); `import/`
+    («Καταχώριση» and «Μαζική καταχώριση», with `useUploadQueue.ts` running the
+    batch).
+  - `viewer/` — OpenSeadragon viewer + its metadata edit form.
+  - `pages/` — the remaining screens (login, home, lookups, manual, change
+    password, status/404). `components/` — what more than one screen uses
+    (layout, combo select, loading, `Modal.tsx` = the dialog shell: backdrop,
+    click-outside, the Escape stack; the confirm dialog). `lib/` — `format.ts`
+    (el-GR dates/sizes), `storage.ts` (localStorage that cannot throw).
+  - `styles/` — the stylesheet, split by role; `src/index.css` imports the
+    parts and is what fixes their cascade order (see the comment there).
+  - The metadata of a drawing is described once in `drawings/meta/fields.ts`
+    (label, length, which pick list, and the conversions to FormData /
+    `DrawingMeta`); the three screens that edit it — Καταχώριση, Μαζική
+    καταχώριση, Επεξεργασία in the viewer — render from it through
+    `meta/MetaForm.tsx` and only decide the layout. Add or rename a field
+    there and all three follow.
 
 ## Pages / routes
 
@@ -32,7 +57,7 @@ settings: always-on app pool, preload/warm-up, upload limit).
 |---|---|
 | `/login` | Login (username = ΑΜΑ, password, κατηγορία προσωπικού when the MIS backend is active) |
 | `/` | Home: counts per category / type / unit — each row links to the filtered list |
-| `/drawings` | Drawing list (`components/ResultsTable.tsx`): filters, sort, page, page size (10/20/50/100, default 10, remembered) all live in the URL so Back/close return to the same list. Columns are drag-resizable from the header edge; widths persist in localStorage (`ypepascan.colWidths`), double-click a grip or «Επαναφορά πλάτους στηλών» restores automatic sizing |
+| `/drawings` | Drawing list (`drawings/`): filters, sort, page, page size (10/20/50/100, default 10, remembered) all live in the URL so Back/close return to the same list. Columns are drag-resizable from the header edge; widths persist in localStorage (`ypepascan.colWidths`), double-click a grip or «Επαναφορά πλάτους στηλών» restores automatic sizing |
 | `/drawings/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
 | `/lookups` | Maintain lookup tables (categories, types, …) — `ADMIN` right only |
 | `/manual` | In-app user manual (Οδηγίες): tabs per area (Γενικά, Αναζήτηση & λίστα, Προβολή/Επεξεργασία, Καταχώριση incl. supported file types, Μαζική καταχώριση, Λίστες επιλογών) with screenshots, plus «Έκδοση & αλλαγές» (version + changelog). `?tab=version` deep-links a tab. «Εκτύπωση / PDF» renders all tabs in one column and opens the browser print dialog (print stylesheet; save as PDF from there) |
@@ -92,13 +117,19 @@ passes with that right **or** `ADMIN`). `GET /api/auth/me` returns
 cannot do and lists them (✓ / dimmed) in the user menu; the server enforces them anyway (403 → «Δεν έχετε δικαίωμα για αυτή
 την ενέργεια»).
 
-| Right (legacy id) | Legacy description | Gates in the web app |
-|---|---|---|
-| `VIEW` (2674) | Προβολή Σχεδίων | Baseline: required to log in at all (otherwise «Δεν έχετε δικαίωμα πρόσβασης…»); search, list, view, inline PDF, tiles |
-| `SCAN` (2676) | Σάρωση Σχεδίων | `POST /api/drawings` — Καταχώριση / Μαζική καταχώριση (buttons on the list page and the home page, `?import=` modals) |
-| `PRINT` (2677) | Εκτύπωση Σχεδίων | `GET /api/drawings/{id}/file` as attachment — «Λήψη πρωτοτύπου» (`?inline=true`, the viewer's PDF frame, is viewing). Without it the PDF iframe gets `#toolbar=0` so Chrome/Edge hide their download/print buttons (UI only; Firefox ignores it) |
-| `EDIT_SCANNED_SXEDIO` (2678) | Επεξεργασία Σχεδίου | `PUT`/`DELETE /api/drawings/{id}` — Επεξεργασία / Διαγραφή in the viewer |
-| `ADMIN` (2675) | Διαχειριστής Εφαρμογής | `POST`/`PUT`/`DELETE /api/lookups/*` — Λίστες επιλογών (nav link + page; direct URL shows a 403 page) and everything above |
+The user menu labels each right by what it unlocks **here** (`APP_RIGHTS` in
+`frontend/src/api/auth.ts`), because the legacy names mislead in this app —
+«Εκτύπωση Σχεδίων» only downloads the original and «Σάρωση Σχεδίων» does not
+scan anything. The mapping to the MIS descriptions is the table below (and the
+manual's «Δικαιώματα» section); it is not shown in the app.
+
+| Right (legacy id) | Legacy description | Shown in the user menu | Gates in the web app |
+|---|---|---|---|
+| `VIEW` (2674) | Προβολή Σχεδίων | Αναζήτηση & προβολή σχεδίων | Baseline: required to log in at all (otherwise «Δεν έχετε δικαίωμα πρόσβασης…»); search, list, view, inline PDF, tiles |
+| `SCAN` (2676) | Σάρωση Σχεδίων | Καταχώριση & μαζική καταχώριση | `POST /api/drawings` — Καταχώριση / Μαζική καταχώριση (buttons on the list page and the home page, `?import=` modals) |
+| `PRINT` (2677) | Εκτύπωση Σχεδίων | Λήψη πρωτοτύπου | `GET /api/drawings/{id}/file` as attachment — «Λήψη πρωτοτύπου» (`?inline=true`, the viewer's PDF frame, is viewing). Without it the PDF iframe gets `#toolbar=0` so Chrome/Edge hide their download/print buttons (UI only; Firefox ignores it) |
+| `EDIT_SCANNED_SXEDIO` (2678) | Επεξεργασία Σχεδίου | Επεξεργασία & διαγραφή | `PUT`/`DELETE /api/drawings/{id}` — Επεξεργασία / Διαγραφή in the viewer |
+| `ADMIN` (2675) | Διαχειριστής Εφαρμογής | Διαχείριση λιστών επιλογών | `POST`/`PUT`/`DELETE /api/lookups/*` — Λίστες επιλογών (nav link + page; direct URL shows a 403 page) and everything above |
 
 Dev mode: `Auth:Rights` is a `true`/`false` map per right name (`VIEW`,
 `SCAN`, `PRINT`, `EDIT_SCANNED_SXEDIO`, `ADMIN`), defaults in `appsettings.json`,
@@ -189,6 +220,15 @@ exercised at realistic sizes.
   and regenerate on next view (~1–3 s). A 10000×15000 scan costs ~6–10 MB of
   tiles, so the default cap keeps roughly the last 100–150 viewed drawings
   instant. The folder can also be deleted manually at any time.
+- **Browser caching of the frontend** (`Program.cs`, `StaticFileOptions`): the
+  files Vite fingerprints (`/assets/*`) are served `immutable` for a year;
+  everything else in `wwwroot` — `index.html` first of all, plus the manual
+  screenshots and the favicon — is served `no-cache`, i.e. revalidate (the ETag
+  answers 304, so nothing is re-downloaded). The header matters: without it the
+  browser picks its own freshness lifetime and a returning user can keep an
+  `index.html` pointing at asset names the next build has already deleted. The
+  rule is configured through DI so `MapFallbackToFile` (every SPA route) uses it
+  too. Tiles set their own `immutable` header in `TileEndpoints`.
 - Loading states everywhere; requests are cancellable end-to-end
   (`CancellationToken` through to Oracle/libvips).
 

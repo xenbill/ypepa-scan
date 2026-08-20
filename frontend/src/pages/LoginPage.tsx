@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getAuthMode, login } from '../api/api'
+import { getAuthMode, login } from '../api/auth'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')

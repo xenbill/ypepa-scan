@@ -1,0 +1,23 @@
+/* 404 / error / "server unreachable" pages. */
+
+.status-page {
+  max-width: 520px; margin: 60px auto; padding: 36px 32px;
+  text-align: center; color: var(--ink-soft);
+  background: var(--card); border: 1px solid var(--border); border-radius: 3px;
+}
+.status-art { position: relative; display: inline-block; color: var(--accent); margin-bottom: 14px; }
+.status-code {
+  position: absolute; left: 0; right: 0; top: 50%; margin-top: -16px;
+  font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--accent-dark);
+  background: var(--card); display: inline-block; width: 60px; margin-left: auto; margin-right: auto; line-height: 32px;
+}
+.status-page h2 { color: var(--ink); font-family: var(--font-display); font-size: 18px; margin: 0 0 8px; }
+.status-msg { margin: 0 0 18px; font-size: 13.5px; line-height: 1.5; }
+.status-actions { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.status-detail { margin-top: 18px; text-align: left; font-size: 12px; }
+.status-detail summary { cursor: pointer; color: var(--ink-soft); }
+.status-detail pre {
+  margin: 8px 0 0; padding: 8px 10px; max-height: 200px; overflow: auto;
+  background: var(--hover-wash); border: 1px solid var(--border-soft); border-radius: 2px;
+  font-family: var(--font-mono); font-size: 11.5px; white-space: pre-wrap; word-break: break-word;
+}

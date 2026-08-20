@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { APP_RIGHTS, hasRight, logout, type UserInfo } from '../api/api'
+import { APP_RIGHTS, hasRight, logout, type UserInfo } from '../api/auth'
 import { APP_VERSION } from '../version'
 import { getTextSize, getThemePref, setTextSize, setThemePref, type TextSize, type ThemePref } from '../theme'
 

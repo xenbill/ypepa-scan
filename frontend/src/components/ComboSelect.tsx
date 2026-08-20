@@ -87,7 +87,9 @@ export default function ComboSelect({ options, value, allLabel, onChange }: Comb
       setHi((h) => Math.max(h - 1, 0))
     } else if (e.key === 'Enter') {
       if (open && matches[hi]) { e.preventDefault(); commit(matches[hi]) }
-    } else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape' && open) {
+      // Consume it: Escape closes the list first, not the dialog around it.
+      e.stopPropagation()
       setOpen(false)
     }
   }

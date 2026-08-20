@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useOutletContext } from 'react-router-dom'
 import OpenSeadragon from 'openseadragon'
-import { deleteDrawing, downloadFile, formatDate, formatFileType, formatMb, getDrawing, getLookups, getViewInfo, hasRight, updateDrawing, UnauthorizedError, type UserInfo } from '../api/api'
+import { hasRight, type UserInfo } from '../api/auth'
+import { deleteDrawing, downloadFile, getDrawing, getViewInfo } from '../api/drawings'
+import { NotFoundError, UnauthorizedError } from '../api/http'
+import { getLookups } from '../api/lookups'
+import { formatDate, formatFileType, formatMb } from '../lib/format'
 import { SkeletonLines, Spinner } from '../components/Loading'
-import { NotFoundError } from '../api/api'
 import { StatusPage } from '../pages/StatusPage'
-import ComboSelect from '../components/ComboSelect'
 import ConfirmModal from '../components/ConfirmModal'
-import { monadaForEdit } from '../api/types'
-import type { DrawingMeta, DrawingRow, LookupData } from '../api/types'
+import { anyModalOpen } from '../components/Modal'
+import MetaEditForm from './MetaEditForm'
 
 interface ViewerProps {
   id: number
@@ -88,7 +90,9 @@ export default function Viewer({ id, onClose }: ViewerProps) {
   }, [info, infoVersion, id, queryClient])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !editing) onClose() }
+    // Escape closes the viewer — unless the metadata form is open (unsaved edits)
+    // or a dialog is in front of it, which takes the key for itself.
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !editing && !anyModalOpen()) onClose() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, editing])
@@ -257,94 +261,5 @@ export default function Viewer({ id, onClose }: ViewerProps) {
         />
       )}
     </div>
-  )
-}
-
-function MetaEditForm({ drawing, lookups, onDone }: {
-  drawing: DrawingRow
-  lookups: LookupData
-  onDone: () => void
-}) {
-  const queryClient = useQueryClient()
-  const [form, setForm] = useState<DrawingMeta>({
-    kodikosErg: drawing.kodikosErg,
-    arithmosSxed: drawing.arithmosSxed,
-    titlosErg: drawing.titlosErg,
-    titlosSxed: drawing.titlosSxed,
-    perigrafhSxed: drawing.perigrafhSxed,
-    perigrafhErg: drawing.perigrafhErg,
-    hmer: drawing.hmer ? drawing.hmer.slice(0, 10) : null,
-    eidosId: drawing.eidosSxedId,
-    kathgId: drawing.kathgErgId,
-    ypokatId: drawing.ypokatErgId,
-    xorosId: drawing.xorosApothId,
-    hstrId: drawing.hstrId,
-  })
-
-  const mutation = useMutation({
-    mutationFn: () => updateDrawing(drawing.sxedioId, form),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['drawing', drawing.sxedioId] })
-      queryClient.invalidateQueries({ queryKey: ['drawings'] })
-      queryClient.invalidateQueries({ queryKey: ['lookups'] }) // Μονάδες-in-use may change
-      onDone()
-    },
-  })
-
-  const text = (key: keyof DrawingMeta) => ({
-    value: (form[key] as string | null) ?? '',
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm({ ...form, [key]: e.target.value || null }),
-  })
-
-  const num = (key: 'eidosId' | 'kathgId' | 'ypokatId' | 'xorosId' | 'hstrId') => ({
-    value: form[key] != null ? String(form[key]) : '',
-    allLabel: '—',
-    onChange: (id: string) => {
-      const next = { ...form, [key]: id ? Number(id) : null }
-      if (key === 'kathgId') next.ypokatId = null
-      setForm(next)
-    },
-  })
-
-  const ypokat = lookups.ypokatErg.filter((y) => !form.kathgId || y.parentId === form.kathgId)
-
-  return (
-    <form
-      className="meta-form"
-      onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}
-    >
-      <div className="meta-section">
-        <h4>Σχέδιο</h4>
-        <label>Αριθμός σχεδίου<input required maxLength={50} {...text('arithmosSxed')} /></label>
-        <label>Είδος σχεδίου<ComboSelect options={lookups.eidosSxed} {...num('eidosId')} /></label>
-        <label>Τίτλος σχεδίου<input maxLength={500} {...text('titlosSxed')} /></label>
-        <label>Περιγραφή σχεδίου<textarea rows={2} maxLength={2000} {...text('perigrafhSxed')} /></label>
-      </div>
-      <div className="meta-section">
-        <h4>Έργο</h4>
-        <label>Κωδικός έργου<input maxLength={50} {...text('kodikosErg')} /></label>
-        <label>Κατηγορία έργου<ComboSelect options={lookups.kathgoriaErg} {...num('kathgId')} /></label>
-        <label>Υποκατηγορία έργου<ComboSelect options={ypokat} {...num('ypokatId')} /></label>
-        <label>Περιγραφή έργου<textarea rows={2} maxLength={2000} {...text('perigrafhErg')} /></label>
-        <label>Μονάδα<ComboSelect options={monadaForEdit(lookups, drawing)} {...num('hstrId')} /></label>
-        <label>Υπομονάδα<input maxLength={500} {...text('titlosErg')} /></label>
-      </div>
-      <div className="meta-section">
-        <h4>Πρόσθετες πληροφορίες</h4>
-        <label>Χώρος αποθήκευσης<ComboSelect options={lookups.xorosApoth} {...num('xorosId')} /></label>
-        <label>Ημερομηνία
-          <input type="date" value={form.hmer ?? ''}
-            onChange={(e) => setForm({ ...form, hmer: e.target.value || null })} />
-        </label>
-      </div>
-      <p>
-        <button className="primary" type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Αποθήκευση…' : 'Αποθήκευση'}
-        </button>{' '}
-        <button type="button" onClick={onDone}>Ακύρωση</button>
-      </p>
-      {mutation.isError && <p className="status-err">{(mutation.error as Error).message}</p>}
-    </form>
   )
 }
