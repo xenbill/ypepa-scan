@@ -270,9 +270,26 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
         // each .dzi declares its own TileSize.
         img.Dzsave(Path.Combine(Dir(id), "img"), tileSize: 512, overlap: 1, suffix: ".jpg[Q=85]");
 
-        // Thumbnail for lists / side panel (decodes downsampled — cheap with vips)
-        using var thumb = Image.Thumbnail(originalPath, 480);
-        thumb.Jpegsave(Path.Combine(Dir(id), "thumb.jpg"), q: 80);
+        // Thumbnail: the pyramid's largest single-tile level IS the whole image
+        // at <=512px, already jpeg-encoded — copying it avoids a second full
+        // decode of the original (which for a 150 MP scan roughly doubled the
+        // first-view cost). Nothing in the UI renders thumbUrl today; this keeps
+        // the API field alive at zero cost.
+        var maxDim = Math.Max(w, h);
+        var top = (int)Math.Ceiling(Math.Log2(Math.Max(maxDim, 2)));
+        var lvl = maxDim <= 512 ? top : top - (int)Math.Ceiling(Math.Log2(maxDim / 512.0));
+        var tile0 = Path.Combine(Dir(id), "img_files", lvl.ToString(), "0_0.jpg");
+        if (File.Exists(tile0))
+        {
+            File.Copy(tile0, Path.Combine(Dir(id), "thumb.jpg"), overwrite: true);
+        }
+        else
+        {
+            // Unexpected pyramid layout — fall back to a fresh downsampled decode.
+            log.LogWarning("Drawing {Id}: single-tile level {Lvl} not found, thumbnailing from source", id, lvl);
+            using var thumb = Image.Thumbnail(originalPath, 480);
+            thumb.Jpegsave(Path.Combine(Dir(id), "thumb.jpg"), q: 80);
+        }
 
         log.LogInformation("Drawing {Id}: pyramid ready", id);
         return new ViewInfo("dzi", $"/tiles/{id}/img.dzi", $"/tiles/{id}/thumb.jpg", w, h);

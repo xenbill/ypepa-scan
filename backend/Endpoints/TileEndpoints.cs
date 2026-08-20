@@ -18,7 +18,7 @@ public static class TileEndpoints
 
     public static IEndpointRouteBuilder MapTileEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/tiles/{**path}", (string path, TileService tiles) =>
+        app.MapGet("/tiles/{**path}", (string path, HttpContext http, TileService tiles) =>
         {
             var root = Path.GetFullPath(tiles.CacheDir);
             var full = Path.GetFullPath(Path.Combine(root, path));
@@ -27,6 +27,12 @@ public static class TileEndpoints
                 return Results.NotFound();
             if (!File.Exists(full))
                 return Results.NotFound();
+
+            // A drawing's tiles/dzi/thumb never change for a given id (eviction
+            // regenerates identical content), so let the browser keep them for a
+            // year and skip re-requesting on every view. "private": authorized
+            // content must not land in shared proxy caches.
+            http.Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
             if (!ContentTypes.TryGetContentType(full, out var contentType))
                 contentType = "application/octet-stream";
