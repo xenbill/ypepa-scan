@@ -1,5 +1,5 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, type ReactNode } from 'react'
+import { useNavigate, useRouteError } from 'react-router-dom'
 
 /** Shared layout for 404 / error / unreachable states: big code, title, note, actions. */
 export function StatusPage({ code, title, message, children, detail }: {
@@ -49,33 +49,35 @@ export function NotFoundPage({ what }: { what?: string }) {
   )
 }
 
-/** Catches render-time exceptions anywhere below it so a bug in one screen
-    doesn't leave the user with a blank page. */
-export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state = { error: null as Error | null }
+/** 403 for a typed/bookmarked URL the user's rights don't cover; the links to
+    the screen are already hidden. `message` says which right unlocks it. */
+export function ForbiddenPage({ message }: { message: string }) {
+  const navigate = useNavigate()
+  return (
+    <StatusPage code="403" title="Δεν έχετε πρόσβαση" message={message}>
+      <button className="primary" onClick={() => navigate('/drawings')}>Λίστα σχεδίων</button>
+      <button onClick={() => navigate('/')}>Αρχική</button>
+    </StatusPage>
+  )
+}
 
-  static getDerivedStateFromError(error: Error) {
-    return { error }
-  }
-
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Unhandled render error', error, info.componentStack)
-  }
-
-  render() {
-    if (!this.state.error) return this.props.children
-    return (
-      <main className="page">
-        <StatusPage
-          code="!"
-          title="Κάτι πήγε στραβά"
-          message="Παρουσιάστηκε απρόσμενο σφάλμα στην εφαρμογή. Δοκιμάστε να φορτώσετε ξανά τη σελίδα."
-          detail={`${this.state.error.name}: ${this.state.error.message}\n${this.state.error.stack ?? ''}`}
-        >
-          <button className="primary" onClick={() => location.reload()}>Επαναφόρτωση</button>
-          <button onClick={() => { location.href = '/' }}>Αρχική</button>
-        </StatusPage>
-      </main>
-    )
-  }
+/** The router's errorElement: catches render-time exceptions in any route so a
+    bug in one screen doesn't leave the user with a blank page. */
+export function RouteErrorPage() {
+  const raw = useRouteError()
+  useEffect(() => { console.error('Unhandled route error', raw) }, [raw])
+  const error = raw instanceof Error ? raw : new Error(String(raw))
+  return (
+    <main className="page">
+      <StatusPage
+        code="!"
+        title="Κάτι πήγε στραβά"
+        message="Παρουσιάστηκε απρόσμενο σφάλμα στην εφαρμογή. Δοκιμάστε να φορτώσετε ξανά τη σελίδα."
+        detail={`${error.name}: ${error.message}\n${error.stack ?? ''}`}
+      >
+        <button className="primary" onClick={() => location.reload()}>Επαναφόρτωση</button>
+        <button onClick={() => { location.href = '/' }}>Αρχική</button>
+      </StatusPage>
+    </main>
+  )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateDrawing } from '../api/drawings'
 import type { DrawingRow, LookupData } from '../api/types'
+import { showToast } from '../components/toasts'
 import { metaFromRow, metaToDrawingMeta, type MetaValues } from '../drawings/meta/fields'
 import { MetaField, MetaForm } from '../drawings/meta/MetaForm'
 
@@ -14,6 +15,7 @@ export default function MetaEditForm({ drawing, lookups, onDone }: {
 }) {
   const queryClient = useQueryClient()
   const [values, setValues] = useState<MetaValues>(() => metaFromRow(drawing))
+  const [numberError, setNumberError] = useState<string>()
 
   const mutation = useMutation({
     mutationFn: () => updateDrawing(drawing.sxedioId, metaToDrawingMeta(values)),
@@ -21,16 +23,31 @@ export default function MetaEditForm({ drawing, lookups, onDone }: {
       queryClient.invalidateQueries({ queryKey: ['drawing', drawing.sxedioId] })
       queryClient.invalidateQueries({ queryKey: ['drawings'] })
       queryClient.invalidateQueries({ queryKey: ['lookups'] }) // Μονάδες-in-use may change
+      showToast('Οι αλλαγές αποθηκεύτηκαν.')
       onDone()
     },
   })
 
+  // Validated here (not by the browser) so the message shows inline at the field.
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (values.arithmosSxed.trim() === '') {
+      setNumberError('Συμπληρώστε τον αριθμό σχεδίου.')
+      return
+    }
+    mutation.mutate()
+  }
+
   return (
-    <form className="meta-form" onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}>
-      <MetaForm values={values} onChange={setValues} lookups={lookups} current={drawing}>
+    <form className="meta-form" onSubmit={submit} noValidate>
+      <MetaForm values={values} lookups={lookups} current={drawing}
+                onChange={(v) => {
+                  setValues(v)
+                  if (v.arithmosSxed.trim()) setNumberError(undefined)
+                }}>
         <div className="meta-section">
           <h4>Σχέδιο</h4>
-          <MetaField k="arithmosSxed" required />
+          <MetaField k="arithmosSxed" required error={numberError} />
           <MetaField k="eidosId" />
           <MetaField k="titlosSxed" />
           <MetaField k="perigrafhSxed" />

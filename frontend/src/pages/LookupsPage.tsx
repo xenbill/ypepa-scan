@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useOutletContext } from 'react-router-dom'
 import { LoadingBlock } from '../components/Loading'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { hasRight, type UserInfo } from '../api/auth'
 import { addLookup, deleteLookup, getLookups, updateLookup, type LookupType } from '../api/lookups'
-import { StatusPage } from './StatusPage'
+import { ForbiddenPage } from './StatusPage'
+import { showToast } from '../components/toasts'
 import type { Lookup } from '../api/types'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -18,22 +19,9 @@ const LISTS: { type: LookupType; title: string }[] = [
 export default function LookupsPage() {
   const user = useOutletContext<UserInfo>()
   // The nav link is hidden without ADMIN; this covers a typed/bookmarked URL.
-  if (!hasRight(user, 'ADMIN')) return <NoAccess />
+  if (!hasRight(user, 'ADMIN'))
+    return <ForbiddenPage message="Η συντήρηση των λιστών επιλογών είναι διαθέσιμη μόνο στους διαχειριστές της εφαρμογής." />
   return <LookupsAdmin />
-}
-
-function NoAccess() {
-  const navigate = useNavigate()
-  return (
-    <StatusPage
-      code="403"
-      title="Δεν έχετε πρόσβαση"
-      message="Η συντήρηση των λιστών επιλογών είναι διαθέσιμη μόνο στους διαχειριστές της εφαρμογής."
-    >
-      <button className="primary" onClick={() => navigate('/drawings')}>Λίστα σχεδίων</button>
-      <button onClick={() => navigate('/')}>Αρχική</button>
-    </StatusPage>
-  )
 }
 
 function LookupsAdmin() {
@@ -108,17 +96,17 @@ function LookupCard({ title, type, items, parents }: {
 
   const addMutation = useMutation({
     mutationFn: () => addLookup(type, newName.trim(), (newParent || parentFilter) ? Number(newParent || parentFilter) : null),
-    onSuccess: () => { setNewName(''); setNewParent(''); setError(null); refresh() },
+    onSuccess: () => { setNewName(''); setNewParent(''); setError(null); refresh(); showToast('Η τιμή προστέθηκε.') },
     onError: fail,
   })
   const updateMutation = useMutation({
     mutationFn: (id: number) => updateLookup(type, id, editName.trim(), editParent ? Number(editParent) : null),
-    onSuccess: () => { setEditingId(null); setError(null); refresh() },
+    onSuccess: () => { setEditingId(null); setError(null); refresh(); showToast('Η αλλαγή αποθηκεύτηκε.') },
     onError: fail,
   })
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteLookup(type, id),
-    onSuccess: () => { setError(null); setToDelete(null); refresh() },
+    onSuccess: () => { setError(null); setToDelete(null); refresh(); showToast('Η τιμή διαγράφηκε.') },
     onError: (e: Error) => { setToDelete(null); fail(e) },
   })
 

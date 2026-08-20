@@ -12,12 +12,12 @@ interface ModalProps {
   /**
    * What to do when the user dismisses the dialog without using its buttons —
    * a click on the backdrop or Escape. Leave it out for a dialog holding work
-   * the user has typed (the import forms): it can then only be closed by its
-   * own «Κλείσιμο», so one stray click or keypress cannot throw a filled-in
-   * form away. Escape is swallowed either way, so nothing behind closes.
+   * the user has typed: it can then only be closed by its own buttons, so one
+   * stray click or keypress cannot throw the work away. Escape is swallowed
+   * either way, so nothing behind closes.
    */
   onDismiss?: () => void
-  /** Extra classes on the dialog box, e.g. 'mass-modal' or 'is-busy'. */
+  /** Extra classes on the dialog box, e.g. 'confirm-modal'. */
   className?: string
   /** Renders aria-busy; leave undefined for dialogs that are never busy. */
   busy?: boolean

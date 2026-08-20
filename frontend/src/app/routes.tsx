@@ -1,7 +1,11 @@
 import { lazy, Suspense } from 'react'
-import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
+import {
+  createBrowserRouter, createRoutesFromElements, Outlet, Route,
+  useLocation, useNavigate, useParams,
+} from 'react-router-dom'
 import { LoadingBlock } from '../components/Loading'
-import { NotFoundPage } from '../pages/StatusPage'
+import Toasts from '../components/toasts'
+import { NotFoundPage, RouteErrorPage } from '../pages/StatusPage'
 import RequireAuth from './RequireAuth'
 import Layout from '../components/Layout'
 import HomePage from '../pages/HomePage'
@@ -11,10 +15,13 @@ import DrawingsPage from '../drawings/DrawingsPage'
 
 // Heavy, rarely-first screens load as separate chunks so the initial bundle —
 // which older PCs must download AND parse before the login page paints — stays
-// small: the viewer drags in OpenSeadragon, the manual is a book of text.
+// small: the viewer drags in OpenSeadragon, the manual is a book of text, the
+// import pages carry the whole metadata form + upload machinery.
 const LookupsPage = lazy(() => import('../pages/LookupsPage'))
 const ManualPage = lazy(() => import('../pages/ManualPage'))
 const Viewer = lazy(() => import('../viewer/Viewer'))
+const ImportPage = lazy(() => import('../drawings/import/ImportPage'))
+const MassImportPage = lazy(() => import('../drawings/import/MassImportPage'))
 
 function ViewerRoute() {
   const { id } = useParams()
@@ -28,24 +35,38 @@ function ViewerRoute() {
   return <Viewer id={numId} onClose={() => navigate('/drawings' + from)} />
 }
 
-export default function AppRoutes() {
+function Root() {
+  // Toasts live at the root so they survive navigation and also cover the
+  // full-screen viewer, which renders outside the <Layout> chrome.
   return (
-    <Suspense fallback={<LoadingBlock />}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<RequireAuth />}>
-          <Route element={<Layout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/drawings" element={<DrawingsPage />} />
-            <Route path="/lookups" element={<LookupsPage />} />
-            <Route path="/manual" element={<ManualPage />} />
-            <Route path="/change-password" element={<ChangePasswordPage />} />
-            {/* Unknown URL: a real 404 page (inside the app chrome) instead of a silent redirect. */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-          <Route path="/drawings/:id" element={<ViewerRoute />} />
-        </Route>
-      </Routes>
-    </Suspense>
+    <>
+      <Suspense fallback={<LoadingBlock />}><Outlet /></Suspense>
+      <Toasts />
+    </>
   )
 }
+
+// A data router (not <BrowserRouter>) because the import pages guard against
+// navigating away from unsaved work with useBlocker, which needs one.
+export const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route element={<Root />} errorElement={<RouteErrorPage />}>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/drawings" element={<DrawingsPage />} />
+          {/* Static segments outrank /drawings/:id, so "import" is never read as an id. */}
+          <Route path="/drawings/import" element={<ImportPage />} />
+          <Route path="/drawings/import/mass" element={<MassImportPage />} />
+          <Route path="/lookups" element={<LookupsPage />} />
+          <Route path="/manual" element={<ManualPage />} />
+          <Route path="/change-password" element={<ChangePasswordPage />} />
+          {/* Unknown URL: a real 404 page (inside the app chrome) instead of a silent redirect. */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+        <Route path="/drawings/:id" element={<ViewerRoute />} />
+      </Route>
+    </Route>,
+  ),
+)

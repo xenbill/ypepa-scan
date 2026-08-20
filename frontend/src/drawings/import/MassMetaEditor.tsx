@@ -20,44 +20,42 @@ export default function MassMetaEditor({ values, onChange, lookups, placeholders
 }) {
   return (
     <div className={'mass-fields' + (disabled ? ' is-disabled' : '')}>
-      <MetaForm values={values} onChange={onChange} lookups={lookups}
+      <MetaForm values={values} onChange={onChange} lookups={lookups} multiline
                 placeholders={placeholders} optionsBasis={optionsBasis} disabled={disabled}>
+        {/* Three label+field pairs per row, no section headers: this grid sits
+            above (and, per file, inside) the file table, so height is what
+            counts. The single-file page keeps the roomier sectioned layout. */}
         <table className="form-table mass-form-table">
           <tbody>
-            <tr><th className="section-row" colSpan={4}>Σχέδιο</th></tr>
             <tr>
               <MetaCells k="eidosId" />
               <MetaCells k="hmer" />
+              <MetaCells k="xorosId" />
             </tr>
-            <tr><MetaCells k="titlosSxed" wide /></tr>
-            <tr><MetaCells k="perigrafhSxed" wide /></tr>
-
-            <tr><th className="section-row" colSpan={4}>Έργο</th></tr>
             <tr>
-              <MetaCells k="kodikosErg" />
               <MetaCells k="kathgId" />
-            </tr>
-            <tr>
               <MetaCells k="ypokatId" />
-              <MetaCells k="perigrafhErg" />
+              <MetaCells k="kodikosErg" />
             </tr>
             <tr>
               <MetaCells k="hstrId" />
               <MetaCells k="titlosErg" />
+              <MetaCells k="perigrafhErg" />
             </tr>
-
-            <tr><th className="section-row" colSpan={4}>Πρόσθετες πληροφορίες</th></tr>
             <tr>
-              <MetaCells k="xorosId" />
-              <td colSpan={2} className="mass-fields-foot">
-                {placeholders && (
+              <MetaCells k="titlosSxed" span={2} />
+              <MetaCells k="perigrafhSxed" span={2} />
+            </tr>
+            {placeholders && (
+              <tr>
+                <td colSpan={6} className="mass-fields-foot">
                   <span className="mass-inherit-note">
                     Κενό πεδίο = κοινή τιμή.
                     {onClear && <> <button type="button" className="linklike" onClick={onClear}>Επαναφορά στα κοινά</button></>}
                   </span>
-                )}
-              </td>
-            </tr>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </MetaForm>

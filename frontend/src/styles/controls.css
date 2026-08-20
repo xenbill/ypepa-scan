@@ -8,6 +8,9 @@ input, select, textarea {
   padding: 7px 10px;
   transition: border-color 0.1s;
 }
+/* Vertical only: every textarea sits at width 100% of its cell, so dragging it
+   wider would push it over the card/panel border. */
+textarea { resize: vertical; }
 input:hover, select:hover, textarea:hover { border-color: var(--border-hover); }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--accent);

@@ -19,6 +19,10 @@ interface MetaFormValue {
       offers the children of an inherited Κατηγορία. */
   optionsBasis?: MetaValues
   disabled?: boolean
+  /** Render single-line text fields as (one-line-tall) textareas too, so every
+      free-text field looks and stretches the same — the mass grid uses this.
+      Newlines are stripped, since these values are single-line in the DB. */
+  multiline?: boolean
 }
 
 const Ctx = createContext<MetaFormValue | null>(null)
@@ -46,28 +50,36 @@ const nameOf = (list: Lookup[], id: string) => list.find((l) => String(l.id) ===
 
 /** One editor control. Everything about the field — label, length, which pick list —
     comes from META_FIELDS, so a change there reaches all three screens. */
-export function MetaControl({ k, required }: { k: MetaKey; required?: boolean }) {
-  const { values, onChange, lookups, current, placeholders, optionsBasis, disabled } = useMetaForm()
+export function MetaControl({ k, required, invalid }: { k: MetaKey; required?: boolean; invalid?: boolean }) {
+  const { values, onChange, lookups, current, placeholders, optionsBasis, disabled, multiline } = useMetaForm()
   const def = META_FIELDS[k]
   const value = values[k]
   const inherited = placeholders?.[k] ?? ''
   const set = (v: string) => onChange(patchMeta(values, { [k]: v } as Partial<MetaValues>))
+  const cls = invalid ? 'is-invalid' : undefined
 
   switch (def.control) {
     case 'text':
+      if (multiline) {
+        return (
+          <textarea value={value} maxLength={def.maxLength} rows={1} required={required} className={cls}
+                    disabled={disabled} placeholder={inherited || undefined}
+                    onChange={(e) => set(e.target.value.replace(/\n/g, ' '))} />
+        )
+      }
       return (
-        <input value={value} maxLength={def.maxLength} required={required}
+        <input value={value} maxLength={def.maxLength} required={required} className={cls}
                disabled={disabled} placeholder={inherited || undefined}
                onChange={(e) => set(e.target.value)} />
       )
     case 'textarea':
       return (
-        <textarea value={value} maxLength={def.maxLength} rows={def.rows} disabled={disabled}
+        <textarea value={value} maxLength={def.maxLength} rows={def.rows} disabled={disabled} className={cls}
                   placeholder={inherited || undefined} onChange={(e) => set(e.target.value)} />
       )
     case 'date':
       return (
-        <input type="date" value={value} disabled={disabled}
+        <input type="date" value={value} disabled={disabled} className={cls}
                title={inherited && !value ? 'Κοινή τιμή: ' + inherited : undefined}
                onChange={(e) => set(e.target.value)} />
       )
@@ -86,17 +98,30 @@ export function MetaControl({ k, required }: { k: MetaKey; required?: boolean })
   }
 }
 
-/** A <th>label</th><td>control</td> pair for the dialogs' .form-table layout. */
-export function MetaCells({ k, required, wide }: { k: MetaKey; required?: boolean; wide?: boolean }) {
+/** A <th>label</th><td>control</td> pair for the import pages' .form-table
+    layout. `error` marks the control red and prints the message under it —
+    the pages validate on submit instead of the browser's native bubbles. */
+export function MetaCells({ k, required, wide, span, error }: {
+  k: MetaKey; required?: boolean; wide?: boolean; span?: number; error?: string
+}) {
   return (
     <>
       <th>{metaLabel(k)}{required ? ' *' : ''}</th>
-      <td colSpan={wide ? 3 : undefined}><MetaControl k={k} required={required} /></td>
+      <td colSpan={span ?? (wide ? 3 : undefined)}>
+        <MetaControl k={k} required={required} invalid={!!error} />
+        {error && <div className="field-err">{error}</div>}
+      </td>
     </>
   )
 }
 
 /** A stacked <label> for the viewer's narrow side panel. */
-export function MetaField({ k, required }: { k: MetaKey; required?: boolean }) {
-  return <label>{metaLabel(k)}<MetaControl k={k} required={required} /></label>
+export function MetaField({ k, required, error }: { k: MetaKey; required?: boolean; error?: string }) {
+  return (
+    <label>
+      {metaLabel(k)}
+      <MetaControl k={k} required={required} invalid={!!error} />
+      {error && <div className="field-err">{error}</div>}
+    </label>
+  )
 }

@@ -11,6 +11,7 @@ import { SkeletonLines, Spinner } from '../components/Loading'
 import { StatusPage } from '../pages/StatusPage'
 import ConfirmModal from '../components/ConfirmModal'
 import { anyModalOpen } from '../components/Modal'
+import { showToast } from '../components/toasts'
 import MetaEditForm from './MetaEditForm'
 
 interface ViewerProps {
@@ -40,6 +41,7 @@ export default function Viewer({ id, onClose }: ViewerProps) {
       queryClient.invalidateQueries({ queryKey: ['drawings'] })
       queryClient.invalidateQueries({ queryKey: ['lookups'] }) // Μονάδες-in-use may change
       queryClient.removeQueries({ queryKey: ['drawing', id] })
+      showToast('Το σχέδιο διαγράφηκε.')
       onClose()
     },
   })

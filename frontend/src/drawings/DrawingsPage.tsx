@@ -1,20 +1,19 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Spinner } from '../components/Loading'
 import { hasRight, type UserInfo } from '../api/auth'
 import { searchDrawings } from '../api/drawings'
 import { getLookups } from '../api/lookups'
-import ImportForm from './import/ImportForm'
-import MassImportForm from './import/MassImportForm'
 import DrawingFilters from './DrawingFilters'
 import EmptyResults from './EmptyResults'
 import Pager from './Pager'
 import ResultsTable from './ResultsTable'
 import { useListState } from './useListState'
 
-/** «Σχέδια» — the search screen: filters, the results table, the pager, and the
-    two import dialogs. The list state itself lives in useListState (the URL). */
+/** «Σχέδια» — the search screen: filters, the results table and the pager. The
+    list state itself lives in useListState (the URL); the import screens are
+    pages of their own (/drawings/import[/mass]). */
 export default function DrawingsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -24,8 +23,12 @@ export default function DrawingsPage() {
 
   const user = useOutletContext<UserInfo>()
   const canScan = hasRight(user, 'SCAN')
-  const [showImport, setShowImport] = useState(canScan && params.get('import') === '1')
-  const [showMassImport, setShowMassImport] = useState(canScan && params.get('import') === 'mass')
+
+  // Old bookmarks: ?import=1 / ?import=mass used to open the dialogs here.
+  useEffect(() => {
+    const imp = params.get('import')
+    if (imp && canScan) navigate(imp === 'mass' ? '/drawings/import/mass' : '/drawings/import', { replace: true })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const lookupsQuery = useQuery({ queryKey: ['lookups'], queryFn: ({ signal }) => getLookups(signal), staleTime: Infinity })
   const lookups = lookupsQuery.data
@@ -49,8 +52,8 @@ export default function DrawingsPage() {
         <h2 className="page-title">Σχέδια</h2>
         {canScan && (
           <span className="list-head-actions">
-            <button onClick={() => setShowMassImport(true)}>Μαζική καταχώριση</button>{' '}
-            <button className="primary" onClick={() => setShowImport(true)}>+ Καταχώριση σχεδίου</button>
+            <button onClick={() => navigate('/drawings/import/mass', { state: { from: location.search } })}>Μαζική καταχώριση</button>{' '}
+            <button className="primary" onClick={() => navigate('/drawings/import', { state: { from: location.search } })}>+ Καταχώριση σχεδίου</button>
           </span>
         )}
       </div>
@@ -74,13 +77,6 @@ export default function DrawingsPage() {
       {result && (
         <Pager page={page} pages={pages} total={result.total} pageSize={pageSize}
                busy={refetching} onPage={list.setPage} onPageSize={list.setPageSize} />
-      )}
-
-      {canScan && showImport && lookups && (
-        <ImportForm lookups={lookups} onClose={() => setShowImport(false)} />
-      )}
-      {canScan && showMassImport && lookups && (
-        <MassImportForm lookups={lookups} onClose={() => setShowMassImport(false)} />
       )}
     </>
   )

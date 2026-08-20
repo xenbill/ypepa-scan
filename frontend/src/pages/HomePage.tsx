@@ -91,13 +91,13 @@ export default function HomePage() {
           </p>
           <p className="hero-note">
             {canScan
-              ? 'Αναζητήστε και προβάλετε τα αρχειοθετημένα σχέδια ή καταχωρίστε νέα.'
+              ? 'Αναζητήστε και προβάλετε τα αρχειοθετημένα σχέδια ή καταχωρήστε νέα.'
               : 'Αναζητήστε και προβάλετε τα αρχειοθετημένα σχέδια.'}
           </p>
           <div className="hero-actions">
             <button className="primary" onClick={() => navigate('/drawings')}>Άνοιγμα λίστας σχεδίων</button>
-            {canScan && <button onClick={() => navigate('/drawings?import=1')}>+ Καταχώριση σχεδίου</button>}
-            {canScan && <button onClick={() => navigate('/drawings?import=mass')}>Μαζική καταχώριση</button>}
+            {canScan && <button onClick={() => navigate('/drawings/import')}>+ Καταχώριση σχεδίου</button>}
+            {canScan && <button onClick={() => navigate('/drawings/import/mass')}>Μαζική καταχώριση</button>}
           </div>
         </div>
         <HeroArt />

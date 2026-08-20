@@ -29,19 +29,24 @@ settings: always-on app pool, preload/warm-up, upload limit).
     (session + rights), `drawings.ts`, `lookups.ts`, `types.ts` (the DTOs).
   - `app/` — the shell: `queryClient.ts` (React Query + the app-wide 401 /
     "server unreachable" policy), `RequireAuth.tsx` (session gate),
-    `routes.tsx` (route table, lazy routes). `main.tsx` only boots.
+    `routes.tsx` (route table, lazy routes; a **data router**
+    (`createBrowserRouter`) because the import pages' leave guard needs
+    `useBlocker`). `main.tsx` only boots.
   - `drawings/` — the Σχέδια screen: `DrawingsPage.tsx`, `useListState.ts`
     (filters/sort/page in the URL, page size in localStorage),
     `DrawingFilters.tsx`, `ResultsTable.tsx`, `Pager.tsx`, `EmptyResults.tsx`;
     `meta/` (the drawing's fields, defined once — see below); `import/`
-    («Καταχώριση» and «Μαζική καταχώριση», with `useUploadQueue.ts` running the
-    batch).
+    (the «Καταχώριση» and «Μαζική καταχώριση» **pages** — `ImportPage.tsx`,
+    `MassImportPage.tsx` — with `useUploadQueue.ts` running the batch).
   - `viewer/` — OpenSeadragon viewer + its metadata edit form.
   - `pages/` — the remaining screens (login, home, lookups, manual, change
     password, status/404). `components/` — what more than one screen uses
     (layout, combo select, loading, `Modal.tsx` = the dialog shell: backdrop,
-    click-outside, the Escape stack; the confirm dialog). `lib/` — `format.ts`
-    (el-GR dates/sizes), `storage.ts` (localStorage that cannot throw).
+    click-outside, the Escape stack; the confirm dialog; `toasts.tsx` =
+    top-center success notifications, mounted once at the route root —
+    errors stay inline next to the action; `useLeaveGuard.ts`). `lib/` —
+    `format.ts` (el-GR dates/sizes), `storage.ts` (localStorage that cannot
+    throw).
   - `styles/` — the stylesheet, split by role; `src/index.css` imports the
     parts and is what fixes their cascade order (see the comment there).
   - The metadata of a drawing is described once in `drawings/meta/fields.ts`
@@ -58,6 +63,8 @@ settings: always-on app pool, preload/warm-up, upload limit).
 | `/login` | Login (username = ΑΜΑ, password, κατηγορία προσωπικού when the MIS backend is active) |
 | `/` | Home: counts per category / type / unit — each row links to the filtered list |
 | `/drawings` | Drawing list (`drawings/`): filters, sort, page, page size (10/20/50/100, default 10, remembered) all live in the URL so Back/close return to the same list. Columns are drag-resizable from the header edge; widths persist in localStorage (`ypepascan.colWidths`), double-click a grip or «Επαναφορά πλάτους στηλών» restores automatic sizing |
+| `/drawings/import` | «Καταχώριση σχεδίου» page (`SCAN` right; others get a 403 page). Required fields (number, file) validate inline (red mark + message, `noValidate` — no browser bubbles). On success returns to the list with a success toast. Leaving with an upload running or a filled-in form asks for confirmation (in-app dialog + browser `beforeunload`); legacy `/drawings?import=1` links redirect here |
+| `/drawings/import/mass` | «Μαζική καταχώριση» page (same guard). When a run ends with every file imported it returns to the list with a toast saying how many; with errors or after «Διακοπή» it stays for fixing/retrying. Legacy `/drawings?import=mass` links redirect here |
 | `/drawings/:id` | Viewer (deep-linkable) with metadata sidebar, edit/delete, download |
 | `/lookups` | Maintain lookup tables (categories, types, …) — `ADMIN` right only |
 | `/manual` | In-app user manual (Οδηγίες): tabs per area (Γενικά, Αναζήτηση & λίστα, Προβολή/Επεξεργασία, Καταχώριση incl. supported file types, Μαζική καταχώριση, Λίστες επιλογών) with screenshots, plus «Έκδοση & αλλαγές» (version + changelog). `?tab=version` deep-links a tab. «Εκτύπωση / PDF» renders all tabs in one column and opens the browser print dialog (print stylesheet; save as PDF from there) |
@@ -126,7 +133,7 @@ manual's «Δικαιώματα» section); it is not shown in the app.
 | Right (legacy id) | Legacy description | Shown in the user menu | Gates in the web app |
 |---|---|---|---|
 | `VIEW` (2674) | Προβολή Σχεδίων | Αναζήτηση & προβολή σχεδίων | Baseline: required to log in at all (otherwise «Δεν έχετε δικαίωμα πρόσβασης…»); search, list, view, inline PDF, tiles |
-| `SCAN` (2676) | Σάρωση Σχεδίων | Καταχώριση & μαζική καταχώριση | `POST /api/drawings` — Καταχώριση / Μαζική καταχώριση (buttons on the list page and the home page, `?import=` modals) |
+| `SCAN` (2676) | Σάρωση Σχεδίων | Καταχώριση & μαζική καταχώριση | `POST /api/drawings` — the `/drawings/import` and `/drawings/import/mass` pages (buttons on the list page and the home page; direct URL without the right shows a 403 page) |
 | `PRINT` (2677) | Εκτύπωση Σχεδίων | Λήψη πρωτοτύπου | `GET /api/drawings/{id}/file` as attachment — «Λήψη πρωτοτύπου» (`?inline=true`, the viewer's PDF frame, is viewing). Without it the PDF iframe gets `#toolbar=0` so Chrome/Edge hide their download/print buttons (UI only; Firefox ignores it) |
 | `EDIT_SCANNED_SXEDIO` (2678) | Επεξεργασία Σχεδίου | Επεξεργασία & διαγραφή | `PUT`/`DELETE /api/drawings/{id}` — Επεξεργασία / Διαγραφή in the viewer |
 | `ADMIN` (2675) | Διαχειριστής Εφαρμογής | Διαχείριση λιστών επιλογών | `POST`/`PUT`/`DELETE /api/lookups/*` — Λίστες επιλογών (nav link + page; direct URL shows a 403 page) and everything above |
@@ -234,17 +241,24 @@ exercised at realistic sizes.
 
 ## Importing / editing drawings
 
-- **Καταχώριση σχεδίου** — uploads TIFF/PDF/JPG + metadata and inserts into
+- **Καταχώριση σχεδίου** (`/drawings/import`, a page of its own) — uploads
+  TIFF/PDF/JPG + metadata and inserts into
   both tables inside one transaction (BLOB is streamed). New ids come from the
   legacy Oracle sequences (`C16PE_SXEDIO_SEQ`, and `C16PE_*_SEQ` for the
   lookups), the same ones the old WinForms app uses, so both apps can insert
   side by side without collisions. Drag-and-drop zone
-  feeds the real file input; upload progress with cancel. New material can
+  feeds the real file input; upload progress with cancel. On success the page
+  returns to the list and confirms with a toast. New material can
   come from Microsoft Lens phone captures (PDF) or any scanner's scan-to-file
   output.
-- **Μαζική καταχώριση** — many files at once: common properties with
+- **Μαζική καταχώριση** (`/drawings/import/mass`) — many files at once: common
+  properties with
   per-file overrides, sequential upload with per-file status; rows are flagged
-  `MAZIKI_KATAXWRISI=1`.
+  `MAZIKI_KATAXWRISI=1`. A run that imports every file returns to the list;
+  errors keep the page open for retrying.
+- Both import pages guard against losing work: navigating away with an upload
+  in flight or a filled-in form asks for confirmation (router `useBlocker` +
+  `beforeunload`, see `components/useLeaveGuard.ts`).
 - **Edit / delete** — metadata of an existing record can be edited
   (`PUT`) and a record deleted (`DELETE`, with confirmation) from the viewer.
   Deletion is a **soft delete on the header row only** (`DELETED=1` on
