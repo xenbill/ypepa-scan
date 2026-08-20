@@ -22,6 +22,7 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
   const [lastId, setLastId] = useState<number | null>(null)
   const [progress, setProgress] = useState<UploadProgress | null>(null)
   const [fileName, setFileName] = useState('')
+  const [fileSize, setFileSize] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -48,7 +49,7 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
 
   function resetLookups() {
     setEidosId(''); setKathgId(''); setYpokatId(''); setHstrId(''); setXorosId('')
-    setFileName('')
+    setFileName(''); setFileSize(null)
   }
 
   // Dropped file goes into the real <input type=file>, so FormData / `required` keep working.
@@ -61,7 +62,7 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
     const dt = new DataTransfer()
     dt.items.add(f)
     fileRef.current.files = dt.files
-    setFileName(f.name)
+    setFileName(f.name); setFileSize(f.size)
   }
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -159,9 +160,12 @@ export default function ImportForm({ lookups, onClose }: ImportFormProps) {
                     {/* kept in the layout (not display:none) so the browser's `required` bubble can anchor to it */}
                     <input ref={fileRef} name="file" type="file" className="drop-zone-input"
                            accept=".tif,.tiff,.pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp" required
-                           onChange={(e) => setFileName(e.target.files?.[0]?.name ?? '')} />
+                           onChange={(e) => {
+                             const f = e.target.files?.[0]
+                             setFileName(f?.name ?? ''); setFileSize(f?.size ?? null)
+                           }} />
                     {fileName
-                      ? <span className="drop-zone-file">{fileName}</span>
+                      ? <span className="drop-zone-file">{fileName}{fileSize != null && <> — {formatMb(fileSize)}</>}</span>
                       : <span>Σύρετε το αρχείο εδώ ή πατήστε για επιλογή.</span>}
                   </div>
                 </td>
