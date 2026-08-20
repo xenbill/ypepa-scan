@@ -17,6 +17,16 @@ public record ViewInfo(string Type, string Url, string ThumbUrl, int? Width, int
 /// </summary>
 public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILogger<TileService> log)
 {
+    static TileService()
+    {
+        // libvips keeps recent operations — and their open input files — in its
+        // operation cache even after the Image is disposed; on Windows that holds
+        // a lock on temp files we delete right after tiling (stage: deleting
+        // embedded.jpg threw UnauthorizedAccessException). Generation is one-shot
+        // per drawing, so the cache buys us nothing — disable it.
+        Cache.Max = 0;
+    }
+
     public string CacheDir { get; } = string.IsNullOrWhiteSpace(cfg["Cache:Dir"])
         ? Path.Combine(env.ContentRootPath, "tile-cache")
         : cfg["Cache:Dir"]!;
@@ -106,7 +116,7 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
             {
                 // The blob copy (and any converted temp) was only needed as decode
                 // input; keeping it would roughly double the cache footprint.
-                if (File.Exists(originalPath)) File.Delete(originalPath);
+                TryDelete(originalPath);
             }
 
             // Atomic publish: readers must never see a half-written meta.json.
@@ -297,7 +307,7 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
             }
             finally
             {
-                if (File.Exists(jpg)) File.Delete(jpg);
+                TryDelete(jpg);
             }
         }
 
@@ -311,7 +321,26 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
         }
         finally
         {
-            if (File.Exists(converted)) File.Delete(converted);
+            TryDelete(converted);
+        }
+    }
+
+    /// <summary>
+    /// Cleanup must never clobber a successful decode (stage: a temp delete threw
+    /// UnauthorizedAccessException from a finally and turned a built pyramid into
+    /// a 500). A leftover temp sits in the drawing's own cache folder and is
+    /// evicted with it; the next generation overwrites it.
+    /// </summary>
+    private void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch (Exception e)
+        {
+            log.LogWarning("Could not delete temp file {Path} ({Reason}); it will be evicted with the folder",
+                path, e.Message);
         }
     }
 
