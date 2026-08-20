@@ -264,8 +264,11 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
         var (w, h) = (img.Width, img.Height);
         log.LogInformation("Drawing {Id}: {W}x{H} image, generating DZI pyramid...", id, w, h);
 
-        // img.dzi + img_files/{level}/{x}_{y}.jpg under the cache dir
-        img.Dzsave(Path.Combine(Dir(id), "img"), tileSize: 256, overlap: 1, suffix: ".jpg[Q=85]");
+        // img.dzi + img_files/{level}/{x}_{y}.jpg under the cache dir.
+        // 512px tiles: ~4x fewer files than 256 (faster generation, fewer HTTP
+        // requests when panning). Pyramids cached with the old size keep working —
+        // each .dzi declares its own TileSize.
+        img.Dzsave(Path.Combine(Dir(id), "img"), tileSize: 512, overlap: 1, suffix: ".jpg[Q=85]");
 
         // Thumbnail for lists / side panel (decodes downsampled — cheap with vips)
         using var thumb = Image.Thumbnail(originalPath, 480);
