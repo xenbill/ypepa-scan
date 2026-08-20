@@ -115,10 +115,6 @@ export default function ImportPage() {
   return (
     <div className="import-page">
       <h2 className="page-title">Καταχώριση νέου σχεδίου</h2>
-      <p className="page-note">
-        Συμπληρώστε τα στοιχεία και επιλέξτε το αρχείο της σάρωσης· μετά την καταχώριση
-        επιστρέφετε στη λίστα σχεδίων.
-      </p>
       <section className={'card import-card' + (busy ? ' is-busy' : '')} aria-busy={busy}>
         <form onSubmit={submit} noValidate>
           <MetaForm values={values} lookups={lookups}

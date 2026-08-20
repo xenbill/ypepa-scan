@@ -435,10 +435,6 @@ export default function ManualPage() {
           Εκτύπωση / PDF
         </button>
       </div>
-      <p className="page-note">
-        Πώς λειτουργεί η εφαρμογή: σύνδεση, αναζήτηση, προβολή και επεξεργασία σχεδίων, καταχώριση
-        (απλή και μαζική), λίστες επιλογών. Η τελευταία καρτέλα δείχνει την έκδοση και το ιστορικό αλλαγών.
-      </p>
       <div className="tabs manual-tabs" role="tablist">
         {SECTIONS.map((s) => (
           <button key={s.key} role="tab" aria-selected={s.key === selected}

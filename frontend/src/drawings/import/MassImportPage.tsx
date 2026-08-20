@@ -78,10 +78,6 @@ export default function MassImportPage() {
   return (
     <div className="import-page">
       <h2 className="page-title">Μαζική καταχώριση σχεδίων</h2>
-      <p className="page-note">
-        Επιλέξτε πολλά αρχεία, συμπληρώστε μία φορά τα κοινά στοιχεία και, όπου χρειάζεται,
-        διαφοροποιήστε ανά αρχείο. Κάθε αρχείο καταχωρείται ως ξεχωριστό σχέδιο.
-      </p>
       <section className={'card mass-card' + (q.running ? ' is-busy' : '')} aria-busy={q.running}>
         {/* ---- common properties ---- */}
         <div className="mass-section">
