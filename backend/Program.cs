@@ -25,6 +25,22 @@ try
 
     builder.Services.AddJwtAuthentication(builder.Configuration);
 
+    // Static files (the built frontend in wwwroot). Vite fingerprints everything it
+    // emits under /assets, so those can be cached forever; anything else — index.html
+    // above all, plus the manual screenshots and the favicon — must be revalidated.
+    // Without a Cache-Control header the browser is free to invent a freshness
+    // lifetime, and a returning browser can then keep an index.html that points at
+    // asset file names the next build has already deleted. "no-cache" does not mean
+    // "download every time": the ETag still answers with a 304.
+    // Configured here rather than on UseStaticFiles() so that MapFallbackToFile —
+    // which serves index.html for every SPA route and reads its options from DI —
+    // is covered by the same rule.
+    builder.Services.Configure<StaticFileOptions>(o => o.OnPrepareResponse = ctx =>
+        ctx.Context.Response.Headers.CacheControl =
+            ctx.Context.Request.Path.StartsWithSegments("/assets")
+                ? "public, max-age=31536000, immutable"
+                : "no-cache");
+
     // Imports can be large scans
     builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = 500L * 1024 * 1024);
     builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 500L * 1024 * 1024);

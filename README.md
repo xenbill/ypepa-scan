@@ -220,6 +220,15 @@ exercised at realistic sizes.
   and regenerate on next view (~1–3 s). A 10000×15000 scan costs ~6–10 MB of
   tiles, so the default cap keeps roughly the last 100–150 viewed drawings
   instant. The folder can also be deleted manually at any time.
+- **Browser caching of the frontend** (`Program.cs`, `StaticFileOptions`): the
+  files Vite fingerprints (`/assets/*`) are served `immutable` for a year;
+  everything else in `wwwroot` — `index.html` first of all, plus the manual
+  screenshots and the favicon — is served `no-cache`, i.e. revalidate (the ETag
+  answers 304, so nothing is re-downloaded). The header matters: without it the
+  browser picks its own freshness lifetime and a returning user can keep an
+  `index.html` pointing at asset names the next build has already deleted. The
+  rule is configured through DI so `MapFallbackToFile` (every SPA route) uses it
+  too. Tiles set their own `immutable` header in `TileEndpoints`.
 - Loading states everywhere; requests are cancellable end-to-end
   (`CancellationToken` through to Oracle/libvips).
 
