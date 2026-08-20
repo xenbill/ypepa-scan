@@ -7,7 +7,8 @@ appear immediately — no migration.
 
 Project/assembly: `Mis.YpepaScan.Web` (namespaces `Mis.YpepaScan.Web.*`),
 solution `Mis.YpepaScan.slnx`. Deployed DLL: `Mis.YpepaScan.Web.dll` (see
-`backend/web.config` for IIS).
+`backend/web.config` for IIS and `docs/iis-setup.md` for the server-side IIS
+settings: always-on app pool, preload/warm-up, upload limit).
 
 ## Structure
 
