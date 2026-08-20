@@ -57,45 +57,45 @@
    setting in «Αυτόματο»). The app bar stays blueprint blue; paper/cards go to dark
    slate, the accent gets lighter for contrast. Only variables change here. */
 [data-theme="dark"] {
-  --paper: #191d22;
-  --card: #21262d;
-  --border: #3a424c;
-  --border-soft: #2d343c;
-  --ink: #e2e6eb;
-  --ink-soft: #9aa5b1;
-  --accent: #2d6cae;           /* fills: primary buttons, bars, active tabs */
-  --accent-dark: #7fb3e6;      /* text: headings, links, primary hover */
-  --accent-wash: #1f2d3f;
-  --blueprint: #0f2238;
-  --blueprint-soft: #1e3c5f;
+  --paper: #22272e;
+  --card: #2a3038;
+  --border: #454e59;
+  --border-soft: #384049;
+  --ink: #e6eaef;
+  --ink-soft: #a6b0bc;
+  --accent: #3377bd;           /* fills: primary buttons, bars, active tabs */
+  --accent-dark: #8abbec;      /* text: headings, links, primary hover */
+  --accent-wash: #263548;
+  --blueprint: #14293f;
+  --blueprint-soft: #25476b;
   --redline: #e0704b;
   --ok: #5cb878;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.25);
-  --hover-wash: #2a313a;
-  --row-alt: #242a32;
-  --soft-bg: #2a313a;
-  --input-bg: #1b2026;
-  --btn-bg: #2a313a;
-  --btn-hover: #343c46;
-  --border-hover: #4d5763;
-  --pop-bg: #262c34;
-  --accent-border: #30496a;
-  --badge-border: #3e5a7a;
-  --drop-bg: #1f2d3f;
-  --grid-tint: rgba(140, 180, 220, 0.05);
-  --focus-ring: rgba(90, 150, 210, 0.35);
-  --focus-ring-strong: rgba(90, 150, 210, 0.5);
-  --mark: rgba(127, 179, 230, 0.45);
-  --danger-border: #6b3a2c;
-  --danger-wash: #3a241c;
-  --danger-bg: #2f1d17;
-  --danger-edge: #6b3a2c;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.2);
+  --hover-wash: #333b45;
+  --row-alt: #2e343d;
+  --soft-bg: #333b45;
+  --input-bg: #262c34;
+  --btn-bg: #333b45;
+  --btn-hover: #3e4752;
+  --border-hover: #57626f;
+  --pop-bg: #303740;
+  --accent-border: #3a567a;
+  --badge-border: #48678a;
+  --drop-bg: #263548;
+  --grid-tint: rgba(140, 180, 220, 0.06);
+  --focus-ring: rgba(100, 160, 220, 0.35);
+  --focus-ring-strong: rgba(100, 160, 220, 0.5);
+  --mark: rgba(138, 187, 236, 0.45);
+  --danger-border: #7a4534;
+  --danger-wash: #442c22;
+  --danger-bg: #38241d;
+  --danger-edge: #7a4534;
   --danger-text: #f3c7b7;
   --warn: #e0b060;
-  --muted-icon: #6d7884;
-  --skeleton: #2a313a;
-  --skeleton-hi: #353d47;
-  --pop-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  --muted-icon: #7b8693;
+  --skeleton: #333b45;
+  --skeleton-hi: #3e4752;
+  --pop-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
   color-scheme: dark;
 }
 
