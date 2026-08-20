@@ -3,7 +3,7 @@
     (see CLAUDE.md). Entries are written for END USERS — what they can now do, not how
     it was implemented. The build date comes from Vite (`__BUILD_DATE__`). */
 
-export const APP_VERSION = '1.0.0'
+export const APP_VERSION = '1.0.1'
 
 export type ChangeSet = {
   version: string
@@ -14,6 +14,13 @@ export type ChangeSet = {
 }
 
 export const CHANGELOG: ChangeSet[] = [
+  {
+    version: '1.0.1',
+    date: '2026-08-20',
+    changes: [
+      'Οι νέες καταχωρίσεις (σχέδια και τιμές στις λίστες επιλογών) παίρνουν πλέον αύξοντα αριθμό με τον ίδιο μηχανισμό αρίθμησης που χρησιμοποιεί η παλιά εφαρμογή, ώστε οι δύο εφαρμογές να λειτουργούν παράλληλα χωρίς κίνδυνο σύγκρουσης εγγραφών.',
+    ],
+  },
   {
     version: '1.0.0',
     date: '2026-08-20',

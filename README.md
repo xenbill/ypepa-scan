@@ -235,7 +235,10 @@ exercised at realistic sizes.
 ## Importing / editing drawings
 
 - **Καταχώριση σχεδίου** — uploads TIFF/PDF/JPG + metadata and inserts into
-  both tables inside one transaction (BLOB is streamed); drag-and-drop zone
+  both tables inside one transaction (BLOB is streamed). New ids come from the
+  legacy Oracle sequences (`C16PE_SXEDIO_SEQ`, and `C16PE_*_SEQ` for the
+  lookups), the same ones the old WinForms app uses, so both apps can insert
+  side by side without collisions. Drag-and-drop zone
   feeds the real file input; upload progress with cancel. New material can
   come from Microsoft Lens phone captures (PDF) or any scanner's scan-to-file
   output.

@@ -211,8 +211,10 @@ public sealed class OracleDrawingStore : IDrawingStore
         await con.OpenAsync(ct);
         await using var tx = await con.BeginTransactionAsync(ct);
 
+        // Same sequence the legacy VB application uses, so both apps can insert
+        // concurrently without id collisions.
         var id = await con.ExecuteScalarAsync<long>(
-            $"select nvl(max(SXEDIO_ID), 0) + 1 from {_owner}.C16PE_SXEDIO", transaction: tx);
+            $"select {_owner}.C16PE_SXEDIO_SEQ.nextval from dual", transaction: tx);
 
         await con.ExecuteAsync(
             $@"insert into {_owner}.C16PE_SXEDIO
@@ -336,37 +338,34 @@ public sealed class OracleDrawingStore : IDrawingStore
     }
 
     // ---- lookup administration ------------------------------------------------
-    private (string Table, string IdCol) LookupTable(string type) => type switch
+    private (string Table, string IdCol, string Seq) LookupTable(string type) => type switch
     {
-        "eidos" => ($"{_owner}.C16PE_EIDOS_SXED", "EIDOS_SXED_ID"),
-        "kathgoria" => ($"{_owner}.C16PE_KATHGORIA_ERG", "KATHG_ERG_ID"),
-        "ypokatigoria" => ($"{_owner}.C16PE_YPOKATHGORIA_ERG", "YPOKAT_ERG_ID"),
-        "xoros" => ($"{_owner}.C16PE_XOROS_APOTH_SXED", "XOROS_APOTH_ID"),
+        "eidos" => ($"{_owner}.C16PE_EIDOS_SXED", "EIDOS_SXED_ID", $"{_owner}.C16PE_EIDOS_SXED_SEQ"),
+        "kathgoria" => ($"{_owner}.C16PE_KATHGORIA_ERG", "KATHG_ERG_ID", $"{_owner}.C16PE_KATHGORIA_ERG_SEQ"),
+        "ypokatigoria" => ($"{_owner}.C16PE_YPOKATHGORIA_ERG", "YPOKAT_ERG_ID", $"{_owner}.C16PE_YPOKATHGORIA_ERG_SEQ"),
+        "xoros" => ($"{_owner}.C16PE_XOROS_APOTH_SXED", "XOROS_APOTH_ID", $"{_owner}.C16PE_XOROS_APOTH_SXED_SEQ"),
         _ => throw new ArgumentException($"Unknown lookup type '{type}'."),
     };
 
     public async Task<long> AddLookupAsync(string type, string name, long? parentId, CancellationToken ct = default)
     {
-        var (table, idCol) = LookupTable(type);
+        var (table, idCol, seq) = LookupTable(type);
         await using var con = Open();
-        await con.OpenAsync(ct);
-        await using var tx = await con.BeginTransactionAsync(ct);
-        var id = await con.ExecuteScalarAsync<long>($"select nvl(max({idCol}), 0) + 1 from {table}", transaction: tx);
+        var id = await con.ExecuteScalarAsync<long>($"select {seq}.nextval from dual");
         if (type == "ypokatigoria")
             await con.ExecuteAsync(
                 $"insert into {table} ({idCol}, PERIGRAFH, KATHG_ERG_ID) values (:id, :name, :parent)",
-                new { id, name, parent = parentId }, tx);
+                new { id, name, parent = parentId });
         else
             await con.ExecuteAsync(
                 $"insert into {table} ({idCol}, PERIGRAFH) values (:id, :name)",
-                new { id, name }, tx);
-        await tx.CommitAsync(ct);
+                new { id, name });
         return id;
     }
 
     public async Task<bool> UpdateLookupAsync(string type, long id, string name, long? parentId, CancellationToken ct = default)
     {
-        var (table, idCol) = LookupTable(type);
+        var (table, idCol, _) = LookupTable(type);
         await using var con = Open();
         var sql = type == "ypokatigoria"
             ? $"update {table} set PERIGRAFH = :name, KATHG_ERG_ID = :parent where {idCol} = :id"
@@ -376,7 +375,7 @@ public sealed class OracleDrawingStore : IDrawingStore
 
     public async Task<bool> DeleteLookupAsync(string type, long id, CancellationToken ct = default)
     {
-        var (table, idCol) = LookupTable(type);
+        var (table, idCol, _) = LookupTable(type);
         await using var con = Open();
         try
         {
