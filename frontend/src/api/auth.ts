@@ -20,13 +20,21 @@ export interface UserInfo {
     Διαγραφή, ADMIN — Λίστες επιλογών (+ everything else). */
 export type AppRight = 'VIEW' | 'SCAN' | 'PRINT' | 'EDIT_SCANNED_SXEDIO' | 'ADMIN'
 
-/** Display order + Greek labels (the legacy descriptions), e.g. for the user menu. */
+/**
+ * Display order for the user menu. Each label says what the right unlocks *here*:
+ * the descriptions registered in the MIS login database describe the WinForms
+ * app and mislead in this one — «Εκτύπωση Σχεδίων» only downloads the original,
+ * and «Σάρωση Σχεδίων» does not scan anything, it registers drawings. The
+ * mapping to those names (also in README and the manual) is:
+ * ADMIN «Διαχειριστής Εφαρμογής», VIEW «Προβολή Σχεδίων», SCAN «Σάρωση Σχεδίων»,
+ * PRINT «Εκτύπωση Σχεδίων», EDIT_SCANNED_SXEDIO «Επεξεργασία Σχεδίου».
+ */
 export const APP_RIGHTS: { right: AppRight; label: string }[] = [
-  { right: 'ADMIN', label: 'Διαχειριστής Εφαρμογής' },
-  { right: 'VIEW', label: 'Προβολή Σχεδίων' },
-  { right: 'SCAN', label: 'Σάρωση Σχεδίων' },
-  { right: 'PRINT', label: 'Εκτύπωση Σχεδίων' },
-  { right: 'EDIT_SCANNED_SXEDIO', label: 'Επεξεργασία Σχεδίου' },
+  { right: 'ADMIN', label: 'Διαχείριση λιστών επιλογών' },
+  { right: 'VIEW', label: 'Αναζήτηση & προβολή σχεδίων' },
+  { right: 'SCAN', label: 'Καταχώριση & μαζική καταχώριση' },
+  { right: 'PRINT', label: 'Λήψη πρωτοτύπου' },
+  { right: 'EDIT_SCANNED_SXEDIO', label: 'Επεξεργασία & διαγραφή' },
 ]
 
 export function hasRight(user: UserInfo | undefined, right: AppRight): boolean {

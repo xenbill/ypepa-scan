@@ -117,13 +117,19 @@ passes with that right **or** `ADMIN`). `GET /api/auth/me` returns
 cannot do and lists them (✓ / dimmed) in the user menu; the server enforces them anyway (403 → «Δεν έχετε δικαίωμα για αυτή
 την ενέργεια»).
 
-| Right (legacy id) | Legacy description | Gates in the web app |
-|---|---|---|
-| `VIEW` (2674) | Προβολή Σχεδίων | Baseline: required to log in at all (otherwise «Δεν έχετε δικαίωμα πρόσβασης…»); search, list, view, inline PDF, tiles |
-| `SCAN` (2676) | Σάρωση Σχεδίων | `POST /api/drawings` — Καταχώριση / Μαζική καταχώριση (buttons on the list page and the home page, `?import=` modals) |
-| `PRINT` (2677) | Εκτύπωση Σχεδίων | `GET /api/drawings/{id}/file` as attachment — «Λήψη πρωτοτύπου» (`?inline=true`, the viewer's PDF frame, is viewing). Without it the PDF iframe gets `#toolbar=0` so Chrome/Edge hide their download/print buttons (UI only; Firefox ignores it) |
-| `EDIT_SCANNED_SXEDIO` (2678) | Επεξεργασία Σχεδίου | `PUT`/`DELETE /api/drawings/{id}` — Επεξεργασία / Διαγραφή in the viewer |
-| `ADMIN` (2675) | Διαχειριστής Εφαρμογής | `POST`/`PUT`/`DELETE /api/lookups/*` — Λίστες επιλογών (nav link + page; direct URL shows a 403 page) and everything above |
+The user menu labels each right by what it unlocks **here** (`APP_RIGHTS` in
+`frontend/src/api/auth.ts`), because the legacy names mislead in this app —
+«Εκτύπωση Σχεδίων» only downloads the original and «Σάρωση Σχεδίων» does not
+scan anything. The mapping to the MIS descriptions is the table below (and the
+manual's «Δικαιώματα» section); it is not shown in the app.
+
+| Right (legacy id) | Legacy description | Shown in the user menu | Gates in the web app |
+|---|---|---|---|
+| `VIEW` (2674) | Προβολή Σχεδίων | Αναζήτηση & προβολή σχεδίων | Baseline: required to log in at all (otherwise «Δεν έχετε δικαίωμα πρόσβασης…»); search, list, view, inline PDF, tiles |
+| `SCAN` (2676) | Σάρωση Σχεδίων | Καταχώριση & μαζική καταχώριση | `POST /api/drawings` — Καταχώριση / Μαζική καταχώριση (buttons on the list page and the home page, `?import=` modals) |
+| `PRINT` (2677) | Εκτύπωση Σχεδίων | Λήψη πρωτοτύπου | `GET /api/drawings/{id}/file` as attachment — «Λήψη πρωτοτύπου» (`?inline=true`, the viewer's PDF frame, is viewing). Without it the PDF iframe gets `#toolbar=0` so Chrome/Edge hide their download/print buttons (UI only; Firefox ignores it) |
+| `EDIT_SCANNED_SXEDIO` (2678) | Επεξεργασία Σχεδίου | Επεξεργασία & διαγραφή | `PUT`/`DELETE /api/drawings/{id}` — Επεξεργασία / Διαγραφή in the viewer |
+| `ADMIN` (2675) | Διαχειριστής Εφαρμογής | Διαχείριση λιστών επιλογών | `POST`/`PUT`/`DELETE /api/lookups/*` — Λίστες επιλογών (nav link + page; direct URL shows a 403 page) and everything above |
 
 Dev mode: `Auth:Rights` is a `true`/`false` map per right name (`VIEW`,
 `SCAN`, `PRINT`, `EDIT_SCANNED_SXEDIO`, `ADMIN`), defaults in `appsettings.json`,
