@@ -10,7 +10,7 @@ namespace Mis.YpepaScan.Web.Data;
 /// </summary>
 public static class DemoSeeder
 {
-    public static void Seed(string dir, string assetsDir)
+    public static void Seed(string dir, string assetsDir, bool cadEnabled)
     {
         Directory.CreateDirectory(Path.Combine(dir, "files"));
         var cadSample = Path.Combine(assetsDir, "mechanical-sample.dxf");
@@ -45,7 +45,7 @@ public static class DemoSeeder
             // Only top-level units are offered on create/edit; 104 stands in for a sub-unit
             // that exists on old rows but is not in the dropdown.
             MonadaEditIds = new List<long> { 101, 102, 103 },
-            Drawings = new[]
+            Drawings = new List<DemoDrawingStore.DemoRow>
             {
                 new DemoDrawingStore.DemoRow { SxedioId = 1, KodikosErg = "ΕΡΓ-2003-014", ArithmosSxed = "Α-014-01",
                     TitlosErg = "Ανακαίνιση Κτιρίου Διοίκησης", TitlosSxed = "Κάτοψη Ισογείου",
@@ -63,12 +63,15 @@ public static class DemoSeeder
                     TitlosErg = "Επέκταση Τροχοδρόμου", TitlosSxed = "Οριζοντιογραφία",
                     PerigrafhSxed = "Τοπογραφικό διάγραμμα ζώνης επέκτασης", Hmer = new DateTime(2015, 3, 18),
                     EidosId = 4, KathgId = 2, YpokatId = 3, XorosId = 3, HstrId = 104, DateIns = new DateTime(2015, 3, 30), UserIns = "DEMO" },
-                new DemoDrawingStore.DemoRow { SxedioId = 5, KodikosErg = "ΕΡΓ-2022-058", ArithmosSxed = "ΗΜ-058-03",
-                    TitlosErg = "Εκσυγχρονισμός Αντλιοστασίου", TitlosSxed = "Μηχανολογική Διάταξη (AutoCAD)",
-                    PerigrafhSxed = "Μηχανολογικό σχέδιο σε μορφή DXF, όπως παραδόθηκε από τον μελετητή", Hmer = new DateTime(2022, 9, 6),
-                    EidosId = 3, KathgId = 3, XorosId = 2, HstrId = 103, DateIns = new DateTime(2022, 9, 14), UserIns = "DEMO" },
             },
         };
+
+        // The CAD sample drawing exists only when the CAD feature is enabled.
+        if (cadEnabled && File.Exists(cadSample))
+            db.Drawings.Add(new DemoDrawingStore.DemoRow { SxedioId = 5, KodikosErg = "ΕΡΓ-2022-058", ArithmosSxed = "ΗΜ-058-03",
+                TitlosErg = "Εκσυγχρονισμός Αντλιοστασίου", TitlosSxed = "Μηχανολογική Διάταξη (AutoCAD)",
+                PerigrafhSxed = "Μηχανολογικό σχέδιο σε μορφή DXF, όπως παραδόθηκε από τον μελετητή", Hmer = new DateTime(2022, 9, 6),
+                EidosId = 3, KathgId = 3, XorosId = 2, HstrId = 103, DateIns = new DateTime(2022, 9, 14), UserIns = "DEMO" });
 
         File.WriteAllText(Path.Combine(dir, "demo.json"),
             JsonSerializer.Serialize(db, new JsonSerializerOptions { WriteIndented = true }));
@@ -79,9 +82,9 @@ public static class DemoSeeder
             if (File.Exists(path)) continue;
             // Drawing 5 is the shipped AutoCAD sample (stored under the store's usual
             // name — the extension is irrelevant, types are sniffed from content).
-            if (d.SxedioId == 5 && File.Exists(cadSample))
+            if (d.SxedioId == 5)
                 File.Copy(cadSample, path);
-            else if (d.SxedioId != 5)
+            else
                 GenerateTiff(path, seed: (int)d.SxedioId);
         }
     }

@@ -10,7 +10,8 @@ import { showToast } from '../../components/toasts'
 import { useLeaveGuard } from '../../components/useLeaveGuard'
 import { ForbiddenPage } from '../../pages/StatusPage'
 import { EMPTY_META, type MetaValues } from '../meta/fields'
-import { ACCEPT } from './accept'
+import { useAppConfig } from '../../components/useAppConfig'
+import { ACCEPT_FALLBACK } from './accept'
 import FileRowView from './FileRow'
 import MassMetaEditor, { summarize } from './MassMetaEditor'
 import { effective, hasOverrides, useUploadQueue } from './useUploadQueue'
@@ -23,6 +24,7 @@ import { effective, hasOverrides, useUploadQueue } from './useUploadQueue'
  */
 export default function MassImportPage() {
   const user = useOutletContext<UserInfo>()
+  const accept = useAppConfig()?.accept ?? ACCEPT_FALLBACK
   const navigate = useNavigate()
   const location = useLocation()
   // The list passes its query string, so returning lands on the same filtered page.
@@ -96,7 +98,7 @@ export default function MassImportPage() {
           <div className="mass-files-head">
             <span className="mass-section-title">Αρχεία ({q.rows.length})</span>
             <span>
-              <input ref={fileInputRef} type="file" multiple accept={ACCEPT} style={{ display: 'none' }}
+              <input ref={fileInputRef} type="file" multiple accept={accept} style={{ display: 'none' }}
                      onChange={(e) => { if (e.target.files) q.addFiles(e.target.files); e.target.value = '' }} />
               <button type="button" disabled={q.running} onClick={() => fileInputRef.current?.click()}>+ Προσθήκη αρχείων</button>{' '}
               {q.doneCount > 0 && !q.running && (

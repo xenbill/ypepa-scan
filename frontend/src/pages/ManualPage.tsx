@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { APP_VERSION, CHANGELOG } from '../version'
+import { useAppConfig } from '../components/useAppConfig'
+import { APP_VERSION, CAD_CHANGE, CHANGELOG } from '../version'
 
 /* In-app user manual (Οδηγίες). One tab per area of the app; the last tab is the
    version + changelog (src/version.ts). Screenshots live in public/manual/*.png|jpg and
@@ -29,7 +30,7 @@ function Shot({ src, alt, caption, narrow }: { src: string; alt: string; caption
 const Kbd = ({ children }: { children: ReactNode }) => <kbd className="manual-kbd">{children}</kbd>
 const Btn = ({ children }: { children: ReactNode }) => <span className="manual-btn">{children}</span>
 
-const SECTIONS: Section[] = [
+const buildSections = (cad: boolean): Section[] => [
   {
     key: 'overview',
     title: 'Γενικά',
@@ -206,10 +207,11 @@ const SECTIONS: Section[] = [
           Την <strong>πρώτη φορά</strong> που ανοίγει ένα μεγάλο σχέδιο χρειάζονται 1–3 δευτερόλεπτα για να
           προετοιμαστεί· τις επόμενες ανοίγει αμέσως. Σχέδια σαρωμένα με <strong>παλαιότερους σαρωτές</strong>{' '}
           (παλαιά μορφή συμπίεσης JPEG μέσα στο TIFF) χρειάζονται λίγα δευτερόλεπτα παραπάνω την πρώτη φορά,
-          γιατί γίνεται αυτόματη μετατροπή — μετά ανοίγουν άμεσα όπως όλα. Το ίδιο ισχύει και για τα
-          σχέδια <strong>CAD (DWG/DXF/DGN/DWF)</strong>: την πρώτη φορά μετατρέπονται αυτόματα σε εικόνα
-          υψηλής ανάλυσης (εμφανίζεται ο χώρος σχεδίασης — model space — σε λευκό φόντο)· το πρωτότυπο
-          αρχείο δεν αλλάζει και κατεβαίνει από το «Λήψη πρωτοτύπου» για άνοιγμα στο πρόγραμμα σχεδίασης.
+          γιατί γίνεται αυτόματη μετατροπή — μετά ανοίγουν άμεσα όπως όλα.
+          {cad && <> Το ίδιο ισχύει και για τα σχέδια <strong>CAD (DWG/DXF/DGN/DWF)</strong>: την
+          πρώτη φορά μετατρέπονται αυτόματα σε εικόνα υψηλής ανάλυσης (εμφανίζεται ο χώρος
+          σχεδίασης — model space — σε λευκό φόντο)· το πρωτότυπο αρχείο δεν αλλάζει και
+          κατεβαίνει από το «Λήψη πρωτοτύπου» για άνοιγμα στο πρόγραμμα σχεδίασης.</>}
         </p>
         <h3>Επεξεργασία στοιχείων</h3>
         <p>
@@ -275,13 +277,15 @@ const SECTIONS: Section[] = [
             <tr><td><strong>JPEG</strong></td><td className="mono">.jpg .jpeg</td><td>Φωτογραφίες σχεδίων, έγχρωμες σαρώσεις.</td><td>Ζουμ ανά τμήματα</td></tr>
             <tr><td><strong>PNG</strong></td><td className="mono">.png</td><td>Εξαγωγές από υπολογιστή, στιγμιότυπα.</td><td>Ζουμ ανά τμήματα</td></tr>
             <tr><td>GIF, BMP, WebP</td><td className="mono">.gif .bmp .webp</td><td>Σπανιότεροι τύποι εικόνας — γίνονται δεκτοί.</td><td>Ζουμ ανά τμήματα</td></tr>
-            <tr><td><strong>DWG / DXF</strong></td><td className="mono">.dwg .dxf .dwt</td><td>Σχέδια AutoCAD (και συμβατών προγραμμάτων), όπως παραδίδονται από μελετητές.</td><td>Ζουμ ανά τμήματα — το σχέδιο μετατρέπεται αυτόματα σε εικόνα την πρώτη φορά</td></tr>
-            <tr><td><strong>DGN</strong></td><td className="mono">.dgn</td><td>Σχέδια MicroStation (Bentley), συνηθισμένα σε παλαιότερες μελέτες υποδομών.</td><td>Ζουμ ανά τμήματα — αυτόματη μετατροπή την πρώτη φορά</td></tr>
-            <tr><td><strong>DWF / DWFX</strong></td><td className="mono">.dwf .dwfx</td><td>Μορφή δημοσίευσης/επισκόπησης του AutoCAD — συχνά έτσι παραδίδονται σχέδια για ανάγνωση.</td><td>Ζουμ ανά τμήματα — αυτόματη μετατροπή την πρώτη φορά</td></tr>
+            {cad && <>
+              <tr><td><strong>DWG / DXF</strong></td><td className="mono">.dwg .dxf .dwt</td><td>Σχέδια AutoCAD (και συμβατών προγραμμάτων), όπως παραδίδονται από μελετητές.</td><td>Ζουμ ανά τμήματα — το σχέδιο μετατρέπεται αυτόματα σε εικόνα την πρώτη φορά</td></tr>
+              <tr><td><strong>DGN</strong></td><td className="mono">.dgn</td><td>Σχέδια MicroStation (Bentley), συνηθισμένα σε παλαιότερες μελέτες υποδομών.</td><td>Ζουμ ανά τμήματα — αυτόματη μετατροπή την πρώτη φορά</td></tr>
+              <tr><td><strong>DWF / DWFX</strong></td><td className="mono">.dwf .dwfx</td><td>Μορφή δημοσίευσης/επισκόπησης του AutoCAD — συχνά έτσι παραδίδονται σχέδια για ανάγνωση.</td><td>Ζουμ ανά τμήματα — αυτόματη μετατροπή την πρώτη φορά</td></tr>
+            </>}
           </tbody>
         </table>
         <ul>
-          <li><strong>Δεν γίνονται δεκτά</strong>: Word/Excel, ZIP κ.λπ. Εξάγετέ τα πρώτα σε PDF ή εικόνα.</li>
+          <li><strong>Δεν γίνονται δεκτά</strong>: {cad ? 'Word/Excel, ZIP κ.λπ.' : 'DWG/DXF (AutoCAD), Word/Excel, ZIP κ.λπ.'} Εξάγετέ τα πρώτα σε PDF ή εικόνα.</li>
           <li>Μέγιστο μέγεθος αρχείου: <strong>500 MB</strong>.</li>
           <li>Το πρωτότυπο αποθηκεύεται <strong>ακριβώς όπως ανέβηκε</strong> και κατεβαίνει από το «Λήψη πρωτοτύπου».</li>
         </ul>
@@ -371,7 +375,7 @@ const SECTIONS: Section[] = [
             </header>
             {c.intro && <p>{c.intro}</p>}
             <ul>
-              {c.changes.map((line, i) => <li key={i}>{line}</li>)}
+              {c.changes.filter((line) => cad || line !== CAD_CHANGE).map((line, i) => <li key={i}>{line}</li>)}
             </ul>
           </section>
         ))}
@@ -381,6 +385,10 @@ const SECTIONS: Section[] = [
 ]
 
 export default function ManualPage() {
+  // The manual adapts to the server config (CAD feature on/off); until /api/config
+  // answers it renders the conservative (non-CAD) content. Keys stay stable.
+  const cad = useAppConfig()?.cadEnabled ?? false
+  const SECTIONS = useMemo(() => buildSections(cad), [cad])
   const [params, setParams] = useSearchParams()
   const fromUrl = params.get('tab')
   const valid = (k: string | null) => SECTIONS.some((s) => s.key === k)

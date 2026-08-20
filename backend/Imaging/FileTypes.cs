@@ -17,6 +17,14 @@ public static class FileTypes
         new HashSet<string> { "pdf", "tiff", "jpeg", "png", "gif", "bmp", "webp", "dwg", "dxf", "dgn", "dwf", "dwfx" };
 
     public const string SupportedLabels = "PDF, TIFF, JPEG, PNG, GIF, BMP, WebP, DWG, DXF, DGN, DWF";
+    public const string SupportedLabelsNoCad = "PDF, TIFF, JPEG, PNG, GIF, BMP, WebP";
+
+    // What the import file pickers offer (GET /api/config) — kept next to the
+    // Supported set so the two cannot drift apart. The server sniffs content
+    // anyway; extensions are only the browser-side filter.
+    private const string AcceptBase = ".tif,.tiff,.pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp";
+    private const string AcceptCad = ".dwg,.dxf,.dwt,.dgn,.dwf,.dwfx";
+    public static string Accept(bool cadEnabled) => cadEnabled ? AcceptBase + "," + AcceptCad : AcceptBase;
 
     public static string Sniff(string path)
     {
@@ -149,8 +157,8 @@ public static class FileTypes
         "zip" => "ZIP/Office", "ole" => "Word/Excel (παλαιό)", _ => "άγνωστος",
     };
 
-    public static string UnsupportedMessage(string type) =>
-        $"Μη υποστηριζόμενος τύπος αρχείου ({Label(type)}). Επιτρέπονται: {SupportedLabels}.";
+    public static string UnsupportedMessage(string type, bool cadEnabled = true) =>
+        $"Μη υποστηριζόμενος τύπος αρχείου ({Label(type)}). Επιτρέπονται: {(cadEnabled ? SupportedLabels : SupportedLabelsNoCad)}.";
 }
 
 /// <summary>Raised when a stored/uploaded file cannot be viewed (unsupported type or unreadable content).</summary>

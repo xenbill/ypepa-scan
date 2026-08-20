@@ -48,14 +48,14 @@ public sealed class DemoDrawingStore : IDrawingStore
         public string? UserIns { get; set; }
     }
 
-    public DemoDrawingStore(IConfiguration cfg, IWebHostEnvironment env)
+    public DemoDrawingStore(IConfiguration cfg, IWebHostEnvironment env, CadRaster cad)
     {
         _dir = string.IsNullOrWhiteSpace(cfg["Demo:Dir"])
             ? Path.Combine(env.ContentRootPath, "demo-data")
             : cfg["Demo:Dir"]!;
         Directory.CreateDirectory(Path.Combine(_dir, "files"));
         if (!File.Exists(DbPath))
-            DemoSeeder.Seed(_dir, Path.Combine(env.ContentRootPath, "demo-assets"));
+            DemoSeeder.Seed(_dir, Path.Combine(env.ContentRootPath, "demo-assets"), cad.Enabled);
     }
 
     private string DbPath => Path.Combine(_dir, "demo.json");

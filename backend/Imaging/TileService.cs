@@ -6,7 +6,14 @@ using Mis.YpepaScan.Web.Data;
 
 namespace Mis.YpepaScan.Web.Imaging;
 
-public record ViewInfo(string Type, string Url, string ThumbUrl, int? Width, int? Height);
+/// <summary>
+/// How to view a drawing. <paramref name="Source"/> is the sniffed type of the
+/// original file ("tiff", "dxf", …) — kept in the cached meta.json so the
+/// cache-hit path can still tell a CAD drawing from a scan without touching the
+/// blob (the CAD feature flag has to gate cached pyramids too). Null in entries
+/// written before this field existed, i.e. never CAD.
+/// </summary>
+public record ViewInfo(string Type, string Url, string ThumbUrl, int? Width, int? Height, string? Source = null);
 
 /// <summary>
 /// Prepares drawings for in-browser viewing. TIFFs (and other images) become
@@ -44,6 +51,10 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, Cad
         {
             if (cached.Type != "pdf")
             {
+                // A pyramid rendered while the CAD feature was on must stop being
+                // served once it is off — the flag gates the cache-hit path too.
+                if (cached.Source is { } src && FileTypes.IsCad(src) && !cad.Enabled)
+                    throw new UnsupportedFileException(src, FileTypes.UnsupportedMessage(src, cadEnabled: false));
                 Touch(id); // record use for LRU eviction
                 return cached;
             }
@@ -67,10 +78,10 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, Cad
             var head = new byte[FileTypes.HeadLength];
             var n = await src.ReadAsync(head, ct);
             var type = FileTypes.Resolve(FileTypes.Sniff(head.AsSpan(0, n)), src);
-            if (!FileTypes.IsSupported(type))
+            if (!FileTypes.IsSupported(type) || (FileTypes.IsCad(type) && !cad.Enabled))
             {
                 log.LogWarning("Drawing {Id}: unsupported file type '{Type}', cannot view", id, type);
-                throw new UnsupportedFileException(type, FileTypes.UnsupportedMessage(type));
+                throw new UnsupportedFileException(type, FileTypes.UnsupportedMessage(type, cad.Enabled));
             }
             if (type == "pdf")
             {
@@ -122,6 +133,8 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, Cad
                 // input; keeping it would roughly double the cache footprint.
                 TryDelete(originalPath);
             }
+
+            info = info with { Source = type };
 
             // Atomic publish: readers must never see a half-written meta.json.
             var tmp = MetaPath(id) + ".tmp";

@@ -92,6 +92,9 @@ All under `/api` and `/tiles` require login.
 
 - `GET /api/auth/mode`, `POST /api/auth/login`, `GET /api/auth/me`,
   `POST /api/auth/logout`, `POST /api/auth/change-password`
+- `GET /api/config` — what the import UI may offer: `cadEnabled` + the accepted
+  file extensions (single source of truth: `FileTypes` + the CAD feature flag);
+  the SPA builds its file pickers and the manual/changelog content from this
 - `GET /api/stats`, `GET /api/drawings` (filters/sort/paging),
   `GET /api/drawings/{id}`, `GET /api/drawings/{id}/view` (tile info),
   `GET /api/drawings/{id}/file` (download), `POST /api/drawings` (import),
@@ -187,11 +190,15 @@ and change `Jwt:Key` for production.
 Paths: `Cache:Dir` (default `<app>/tile-cache`), `Demo:Dir` (default
 `<app>/demo-data`).
 
-CAD viewing: `Aspose:LicensePath` — the Aspose.CAD `.lic` file (production
+CAD viewing: `Cad:Enabled` — the feature flag (default `true`; `false` rejects
+CAD files on import/view — the original still downloads — and hides every CAD
+mention from the UI); `Cad:RequireLicense` — `true` disables the feature when
+the licence file is missing, instead of the default evaluation-mode rendering
+(default `false`); `Aspose:LicensePath` — the Aspose.CAD `.lic` file (production
 default `C:\YpepaScanWeb\Aspose.CAD.lic`; missing/invalid → evaluation mode,
 watermarked renders, warning in the log); `Cad:RasterPixels` — long side of the
-CAD render in pixels (default 8000; higher = crisper deep zoom, more transient
-RAM per first view).
+CAD render in pixels (default 6000; higher = crisper
+deep zoom, more transient RAM per first view).
 
 ## Run (demo mode, no Oracle needed)
 
@@ -202,10 +209,10 @@ dotnet run --urls http://localhost:5580
 
 (Development environment → Demo store + dev login.) First start generates four
 sample 10000×15000 bilevel TIFFs under `backend/demo-data/` so the viewer can be
-exercised at realistic sizes, plus a fifth drawing seeded from
-`backend/demo-assets/mechanical-sample.dxf` — a real AutoCAD DXF (CADKit sample
-drawing) that exercises the CAD render path. Delete `backend/demo-data/` to
-re-seed.
+exercised at realistic sizes, plus — when the CAD feature is enabled — a fifth
+drawing seeded from `backend/demo-assets/mechanical-sample.dxf`, a real AutoCAD
+DXF (CADKit sample drawing) that exercises the CAD render path. Delete
+`backend/demo-data/` to re-seed.
 
 ## How viewing works
 
@@ -229,12 +236,16 @@ re-seed.
 - **CAD files (DWG/DXF/DWT, DGN, DWF/DWFX)** are vectors libvips cannot decode:
   on first view **Aspose.CAD** (`Imaging/CadRaster.cs`) renders them once to a
   temporary high-resolution PNG (model space, white background, entity colours;
-  long side `Cad:RasterPixels`, default 8000 px) and that raster is tiled into
+  long side `Cad:RasterPixels`, default 6000 px) and that raster is tiled into
   the same DZI pyramid — cached and LRU-evicted like any scan. The Aspose
   licence file is loaded lazily from `Aspose:LicensePath`; without it rendering
   still works but Aspose watermarks the output (logged as a warning). The
   original CAD file stays in the store untouched and is what «Λήψη πρωτοτύπου»
-  downloads.
+  downloads. The whole feature sits behind **`Cad:Enabled`** (default `true`);
+  with `Cad:RequireLicense=true` it additionally disables itself when the
+  licence file is missing (instead of the default watermark behaviour). When
+  disabled, CAD files are rejected like any unsupported type and the SPA
+  (pickers, manual, changelog — via `GET /api/config`) shows no CAD mention.
 - File type is detected by **magic bytes** (`Imaging/FileTypes.cs`) and
   reported in `GET /api/drawings/{id}`; unsupported types are rejected on
   import/view. Formats without a fixed magic get bespoke checks: ASCII DXF by

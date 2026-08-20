@@ -25,7 +25,23 @@ public sealed class CadRaster
         _longSide = cfg.GetValue<int?>("Cad:RasterPixels") ?? 6000;
         var path = cfg["Aspose:LicensePath"];
         _license = new(() => LoadLicense(path), LazyThreadSafetyMode.ExecutionAndPublication);
+
+        // Feature flag. Cad:Enabled turns the whole CAD feature on/off; with
+        // Cad:RequireLicense=true it additionally turns itself off when the Aspose
+        // licence file is missing (instead of the default: render with watermark).
+        var enabled = cfg.GetValue<bool?>("Cad:Enabled") ?? true;
+        if (enabled && (cfg.GetValue<bool?>("Cad:RequireLicense") ?? false)
+                    && (string.IsNullOrWhiteSpace(path) || !File.Exists(path)))
+        {
+            log.LogWarning("CAD support disabled: Cad:RequireLicense is set and no Aspose licence file exists at {Path}",
+                string.IsNullOrWhiteSpace(path) ? "(unset)" : path);
+            enabled = false;
+        }
+        Enabled = enabled;
     }
+
+    /// <summary>Whether CAD files are accepted and viewable at all (see ctor).</summary>
+    public bool Enabled { get; }
 
     private bool LoadLicense(string? path)
     {
