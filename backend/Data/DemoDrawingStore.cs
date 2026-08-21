@@ -25,6 +25,9 @@ public sealed class DemoDrawingStore : IDrawingStore
         /// <summary>Ids of Monada entries that are top-level Μονάδες (offered on create/edit).</summary>
         public List<long> MonadaEditIds { get; set; } = [];
         public List<DemoRow> Drawings { get; set; } = [];
+        /// <summary>Deleted drawings, mirroring the Oracle C16PE_SXEDIO_DELETED archive:
+        /// the row leaves Drawings, the file under files/ stays.</summary>
+        public List<DemoDeleted> DrawingsDeleted { get; set; } = [];
     }
 
     public sealed class DemoRow
@@ -43,9 +46,17 @@ public sealed class DemoDrawingStore : IDrawingStore
         public long? XorosId { get; set; }
         public long? HstrId { get; set; }
         public int? MazikiKataxwrisi { get; set; }
-        public bool Deleted { get; set; }
         public DateTime? DateIns { get; set; }
         public string? UserIns { get; set; }
+    }
+
+    public sealed class DemoDeleted
+    {
+        /// <summary>v7 GUID, as in the Oracle archive table.</summary>
+        public string Id { get; set; } = "";
+        public DateTime DeletedAt { get; set; }
+        public string? DeletedBy { get; set; }
+        public DemoRow Row { get; set; } = new();
     }
 
     public DemoDrawingStore(IConfiguration cfg, IWebHostEnvironment env, CadRaster cad)
@@ -76,7 +87,7 @@ public sealed class DemoDrawingStore : IDrawingStore
     public Task<LookupData> GetLookupsAsync(CancellationToken ct = default)
     {
         var db = Load();
-        var used = db.Drawings.Where(d => !d.Deleted && d.HstrId is not null).Select(d => d.HstrId!.Value).ToHashSet();
+        var used = db.Drawings.Where(d => d.HstrId is not null).Select(d => d.HstrId!.Value).ToHashSet();
         var monadaInUse = db.Monada.Where(m => used.Contains(m.Id)).ToList();
         var monadaEdit = db.Monada.Where(m => db.MonadaEditIds.Contains(m.Id)).ToList();
         return Task.FromResult(new LookupData(db.EidosSxed, db.KathgoriaErg, db.YpokatErg, db.XorosApoth, monadaInUse, monadaEdit));
@@ -103,7 +114,7 @@ public sealed class DemoDrawingStore : IDrawingStore
     public Task<SearchResult> SearchAsync(SearchParams p, CancellationToken ct = default)
     {
         var db = Load();
-        IEnumerable<DemoRow> q = db.Drawings.Where(d => !d.Deleted);
+        IEnumerable<DemoRow> q = db.Drawings;
         if (!string.IsNullOrWhiteSpace(p.Q))
         {
             var s = p.Q.Trim().ToUpperInvariant();
@@ -152,7 +163,7 @@ public sealed class DemoDrawingStore : IDrawingStore
     public Task<DrawingRow?> GetAsync(long id, CancellationToken ct = default)
     {
         var db = Load();
-        var d = db.Drawings.FirstOrDefault(x => x.SxedioId == id && !x.Deleted);
+        var d = db.Drawings.FirstOrDefault(x => x.SxedioId == id);
         if (d is null) return Task.FromResult<DrawingRow?>(null);
         long? size = File.Exists(FilePath(id)) ? new FileInfo(FilePath(id)).Length : null;
         string? type = size is null ? null : FileTypes.Sniff(FilePath(id));
@@ -161,7 +172,8 @@ public sealed class DemoDrawingStore : IDrawingStore
 
     public Task<(Stream Stream, long Length)?> OpenFileAsync(long id, CancellationToken ct = default)
     {
-        if (Load().Drawings.Any(x => x.SxedioId == id && x.Deleted))
+        // The file of a deleted drawing stays on disk (as the Oracle blob row does), but is not served.
+        if (!Load().Drawings.Any(x => x.SxedioId == id))
             return Task.FromResult<(Stream, long)?>(null);
         var path = FilePath(id);
         if (!File.Exists(path)) return Task.FromResult<(Stream, long)?>(null);
@@ -219,12 +231,19 @@ public sealed class DemoDrawingStore : IDrawingStore
         return Task.FromResult(true);
     }
 
-    public Task<bool> SoftDeleteAsync(long id, CancellationToken ct = default)
+    public Task<bool> DeleteAsync(long id, string? deletedBy, CancellationToken ct = default)
     {
         var db = Load();
-        var d = db.Drawings.FirstOrDefault(x => x.SxedioId == id && !x.Deleted);
+        var d = db.Drawings.FirstOrDefault(x => x.SxedioId == id);
         if (d is null) return Task.FromResult(false);
-        d.Deleted = true;
+        db.Drawings.Remove(d);
+        db.DrawingsDeleted.Add(new DemoDeleted
+        {
+            Id = Guid.CreateVersion7().ToString(),
+            DeletedAt = DateTime.Now,
+            DeletedBy = deletedBy,
+            Row = d,
+        });
         Save(db);
         return Task.FromResult(true);
     }
@@ -232,7 +251,7 @@ public sealed class DemoDrawingStore : IDrawingStore
     public Task<ArchiveStats> GetStatsAsync(CancellationToken ct = default)
     {
         var db = Load();
-        var live = db.Drawings.Where(d => !d.Deleted).ToList();
+        var live = db.Drawings;
         string Name(List<Lookup> l, long? id) => l.FirstOrDefault(x => x.Id == id)?.Name ?? "—";
         List<StatItem> Group(List<Lookup> l, Func<DemoRow, long?> key) => live
             .GroupBy(key)

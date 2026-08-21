@@ -63,12 +63,12 @@ public static class DrawingEndpoints
         api.MapDelete("/drawings/{id:long}", async (long id, ClaimsPrincipal user,
             IDrawingStore store, TileService tileSvc, CancellationToken ct) =>
         {
-            if (!await store.SoftDeleteAsync(id, ct))
+            if (!await store.DeleteAsync(id, user.Identity?.Name, ct))
                 return Results.NotFound();
-            // No ct: once the row is flagged, the cached tiles must go even if the
+            // No ct: once the row is archived, the cached tiles must go even if the
             // client disconnects — otherwise the pyramid stays servable until LRU.
             await tileSvc.PurgeAsync(id);
-            Log.Warning("Drawing {Id} soft-deleted by {User}", id, user.Identity?.Name);
+            Log.Warning("Drawing {Id} deleted (moved to C16PE_SXEDIO_DELETED) by {User}", id, user.Identity?.Name);
             return Results.Ok();
         }).RequireAuthorization(AppRights.Edit);
 

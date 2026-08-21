@@ -21,7 +21,7 @@ export const CAD_CHANGE =
 export const CHANGELOG: ChangeSet[] = [
   {
     version: '1.0.0',
-    date: '2026-08-20',
+    date: '2026-08-21',
     title: 'Μετάβαση από την εφαρμογή WinForms στο web',
     intro:
       'Η εφαρμογή «Σχέδια ΥΠΕΠΑ» αντικαθιστά την παλιά εφαρμογή σάρωσης σχεδίων (WinForms). ' +

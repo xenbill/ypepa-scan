@@ -3,7 +3,9 @@
 Standalone web app that replaces the legacy VB WinForms drawing-scan archive.
 It reads/writes the **existing Oracle tables** (`CCC.C16PE_SXEDIO`,
 `CCC.C16PE_SXEDIO_BLOB` + lookups) unchanged, so all ~47,000 archived drawings
-appear immediately — no migration.
+appear immediately — no migration. The only schema addition is one new table,
+`CCC.C16PE_SXEDIO_DELETED` (see [Deletion](#deletion)), which the legacy
+application never looks at.
 
 Project/assembly: `Mis.YpepaScan.Web` (namespaces `Mis.YpepaScan.Web.*`),
 solution `Mis.YpepaScan.slnx`. Deployed DLL: `Mis.YpepaScan.Web.dll` (see
@@ -178,6 +180,95 @@ The Μονάδα filter/column resolves `C16PE_SXEDIO.HSTR_ID` against
 `COMMON.G11HAF_STRUCTURE` (`HSTR_ID`/`TITLE`) — the CCC account has read access.
 Schema owner configurable via `Oracle:CommonOwner`.
 
+## Deletion
+
+The legacy WinForms application selects from `C16PE_SXEDIO` with no notion of a
+deleted flag, so a flagged row would keep showing up there. Deleting therefore
+**moves the header row out of the table the old application reads**: one
+transaction copies it into `CCC.C16PE_SXEDIO_DELETED` and deletes it from
+`CCC.C16PE_SXEDIO` (`OracleDrawingStore.DeleteAsync`). Both applications then
+stop listing the drawing.
+
+- The archive row gets its own key, `ID` — a **v7 GUID** as a 36-char string
+  (`Guid.CreateVersion7()`), time-ordered, so the archive reads in deletion
+  order. `SXEDIO_ID` is kept as a plain column (deleting and re-deleting the
+  same id over time is fine — each deletion is its own row).
+- `DELETED_AT`/`DELETED_BY` record when and by whom (the logged-in user).
+- **The blob row is not touched.** `C16PE_SXEDIO_BLOB` keeps the scan under the
+  old `SXEDIO_ID`, orphaned; nothing serves it, because every read joins the
+  header row. Restoring a drawing is inserting the header row back into
+  `C16PE_SXEDIO` from the archive — the file is still there.
+- Nothing in the UI reads the archive; it is an audit/undo table maintained
+  from SQL*Plus.
+
+Run once, as the `CCC` schema owner (`Oracle:Owner`):
+
+```sql
+-- 1. Archive table: same columns as C16PE_SXEDIO (CTAS copies the column types,
+--    no keys/indexes), plus the archive's own key and audit columns.
+create table CCC.C16PE_SXEDIO_DELETED as
+  select * from CCC.C16PE_SXEDIO where 1 = 0;
+
+alter table CCC.C16PE_SXEDIO_DELETED add (
+  ID         varchar2(36),
+  DELETED_AT date default sysdate not null,
+  DELETED_BY varchar2(100)
+);
+
+alter table CCC.C16PE_SXEDIO_DELETED
+  add constraint C16PE_SXEDIO_DELETED_PK primary key (ID);
+
+create index C16PE_SXEDIO_DELETED_IX
+  on CCC.C16PE_SXEDIO_DELETED (SXEDIO_ID);
+```
+
+```sql
+-- 2. Only if the old DELETED flag column exists: move the rows already flagged
+--    into the archive, then drop the column from both tables. sys_guid() ids are
+--    plain GUIDs, not v7 — only deletions made by the app are time-ordered.
+insert into CCC.C16PE_SXEDIO_DELETED
+  (ID, DELETED_AT, DELETED_BY,
+   SXEDIO_ID, KODIKOS_ERG, ARITHMOS_SXED, EIDOS_SXED_ID, TITLOS_ERG, TITLOS_SXED,
+   PERIGRAFH_SXED, PERIGRAFH_ERG, YPOKAT_ERG_ID, HMER, XOROS_APOTH_ID, KATHG_ERG_ID,
+   HSTR_ID, DATE_INS, USER_INS, MAZIKI_KATAXWRISI)
+select lower(regexp_replace(rawtohex(sys_guid()),
+              '(.{8})(.{4})(.{4})(.{4})(.{12})', '\1-\2-\3-\4-\5')),
+       sysdate, null,
+       s.SXEDIO_ID, s.KODIKOS_ERG, s.ARITHMOS_SXED, s.EIDOS_SXED_ID, s.TITLOS_ERG, s.TITLOS_SXED,
+       s.PERIGRAFH_SXED, s.PERIGRAFH_ERG, s.YPOKAT_ERG_ID, s.HMER, s.XOROS_APOTH_ID, s.KATHG_ERG_ID,
+       s.HSTR_ID, s.DATE_INS, s.USER_INS, s.MAZIKI_KATAXWRISI
+  from CCC.C16PE_SXEDIO s
+ where nvl(s.DELETED, 0) = 1;
+
+delete from CCC.C16PE_SXEDIO where nvl(DELETED, 0) = 1;
+
+alter table CCC.C16PE_SXEDIO         drop column DELETED;
+alter table CCC.C16PE_SXEDIO_DELETED drop column DELETED;  -- came with the CTAS copy
+
+commit;
+```
+
+The app writes the archive with an explicit column list, so extra legacy columns
+copied by the CTAS are simply left null. If `C16PE_SXEDIO` has `not null` columns
+the app does not write, CTAS carries the `not null` over and the insert would
+fail — relax those in the archive table.
+
+Restoring one drawing (`&id` = the `SXEDIO_ID`):
+
+```sql
+insert into CCC.C16PE_SXEDIO
+  (SXEDIO_ID, KODIKOS_ERG, ARITHMOS_SXED, EIDOS_SXED_ID, TITLOS_ERG, TITLOS_SXED,
+   PERIGRAFH_SXED, PERIGRAFH_ERG, YPOKAT_ERG_ID, HMER, XOROS_APOTH_ID, KATHG_ERG_ID,
+   HSTR_ID, DATE_INS, USER_INS, MAZIKI_KATAXWRISI)
+select SXEDIO_ID, KODIKOS_ERG, ARITHMOS_SXED, EIDOS_SXED_ID, TITLOS_ERG, TITLOS_SXED,
+       PERIGRAFH_SXED, PERIGRAFH_ERG, YPOKAT_ERG_ID, HMER, XOROS_APOTH_ID, KATHG_ERG_ID,
+       HSTR_ID, DATE_INS, USER_INS, MAZIKI_KATAXWRISI
+  from CCC.C16PE_SXEDIO_DELETED where SXEDIO_ID = &id;
+
+delete from CCC.C16PE_SXEDIO_DELETED where SXEDIO_ID = &id;
+commit;
+```
+
 ## Configuration
 
 `backend/appsettings.json` holds the **production** settings
@@ -297,11 +388,10 @@ DXF (CADKit sample drawing) that exercises the CAD render path. Delete
   `beforeunload`, see `components/useLeaveGuard.ts`).
 - **Edit / delete** — metadata of an existing record can be edited
   (`PUT`) and a record deleted (`DELETE`, with confirmation) from the viewer.
-  Deletion is a **soft delete on the header row only** (`DELETED=1` on
-  `C16PE_SXEDIO`); the blob is never touched, so clearing the flag restores
-  the drawing. The drawing's cached tile pyramid is purged on delete, so the
-  tiles stop being servable immediately (a restored drawing regenerates its
-  pyramid on first view).
+  Deletion moves the header row into `C16PE_SXEDIO_DELETED` — see
+  [Deletion](#deletion). The drawing's cached tile pyramid is purged on delete,
+  so the tiles stop being servable immediately (a restored drawing regenerates
+  its pyramid on first view).
 - **Lookups** — categories/types etc. are maintained in-app (`/lookups`).
 - **Not in the web app**: direct scanning from a scanner and printing — users
   keep the Windows (dedicated scan) app / scanner or printer software for those

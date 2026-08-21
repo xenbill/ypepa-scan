@@ -42,11 +42,11 @@ public sealed class OracleDrawingStore : IDrawingStore
             $"select XOROS_APOTH_ID, PERIGRAFH from {_owner}.C16PE_XOROS_APOTH_SXED order by PERIGRAFH"))
             .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
         // Μονάδα: HAF unit structure shared with the Filippos apps. Search filter
-        // shows only units that actually have (non-deleted) drawings.
+        // shows only units that actually have drawings.
         var monadaInUse = (await con.QueryAsync<(long, string)>(
             $@"select h.HSTR_ID, h.TITLE from {_commonOwner}.G11HAF_STRUCTURE h
                where exists (select 1 from {_owner}.C16PE_SXEDIO s
-                             where s.HSTR_ID = h.HSTR_ID and nvl(s.DELETED, 0) = 0)
+                             where s.HSTR_ID = h.HSTR_ID)
                order by h.TITLE"))
             .Select(t => new Lookup(t.Item1, t.Item2)).ToList();
         // Create/edit: only Μονάδες (same query as the legacy WinForms app).
@@ -95,8 +95,8 @@ public sealed class OracleDrawingStore : IDrawingStore
 
     public async Task<SearchResult> SearchAsync(SearchParams p, CancellationToken ct = default)
     {
-        // Soft-deleted drawings are invisible everywhere (nvl: rows older than the flag column count as live).
-        var where = new List<string> { "nvl(s.DELETED, 0) = 0" };
+        // Deleted drawings are not in C16PE_SXEDIO at all (see DeleteAsync), so nothing to filter out.
+        var where = new List<string>();
         var args = new DynamicParameters();
         if (!string.IsNullOrWhiteSpace(p.Q))
         {
@@ -115,7 +115,7 @@ public sealed class OracleDrawingStore : IDrawingStore
         if (p.HstrId is not null) { where.Add("s.HSTR_ID = :hstr");           args.Add("hstr", p.HstrId); }
         if (p.InsFrom is not null) { where.Add("s.DATE_INS >= :insFrom");     args.Add("insFrom", p.InsFrom.Value.Date); }
         if (p.InsTo is not null) { where.Add("s.DATE_INS < :insTo");          args.Add("insTo", p.InsTo.Value.Date.AddDays(1)); }
-        var wh = "where " + string.Join(" and ", where);
+        var wh = where.Count == 0 ? "" : "where " + string.Join(" and ", where);
 
         var pageSize = Math.Clamp(p.PageSize, 1, 100);
         var page = Math.Max(p.Page, 1);
@@ -166,7 +166,7 @@ public sealed class OracleDrawingStore : IDrawingStore
             $@"select {Cols},
                       (select dbms_lob.getlength(b.SXEDIO) from {_owner}.C16PE_SXEDIO_BLOB b
                         where b.SXEDIO_ID = s.SXEDIO_ID and rownum = 1) as SizeBytes
-               {BaseSelect} where s.SXEDIO_ID = :id and nvl(s.DELETED, 0) = 0", new { id });
+               {BaseSelect} where s.SXEDIO_ID = :id", new { id });
         if (row is null || row.SizeBytes is null) return row;
         // Magic-number sniff: only the first bytes of the BLOB, no full read.
         var head = await con.ExecuteScalarAsync<byte[]>(
@@ -184,9 +184,10 @@ public sealed class OracleDrawingStore : IDrawingStore
         {
             await con.OpenAsync(ct);
             await using var cmd = con.CreateCommand();
+            // The join keeps a deleted drawing's orphan blob row (see DeleteAsync) unreadable.
             cmd.CommandText = $@"select b.SXEDIO from {_owner}.C16PE_SXEDIO_BLOB b
                                    join {_owner}.C16PE_SXEDIO s on s.SXEDIO_ID = b.SXEDIO_ID
-                                  where b.SXEDIO_ID = :id and nvl(s.DELETED, 0) = 0";
+                                  where b.SXEDIO_ID = :id";
             cmd.Parameters.Add(new OracleParameter("id", id));
             var reader = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess, ct);
             if (!await reader.ReadAsync(ct) || await ((OracleDataReader)reader).IsDBNullAsync(0, ct))
@@ -301,37 +302,57 @@ public sealed class OracleDrawingStore : IDrawingStore
         return rows > 0;
     }
 
-    public async Task<bool> SoftDeleteAsync(long id, CancellationToken ct = default)
+    public async Task<bool> DeleteAsync(long id, string? deletedBy, CancellationToken ct = default)
     {
-        // Only the header row is flagged; the blob row is left untouched so the
-        // scan itself is never marked and can be restored by clearing one flag.
+        // The legacy application has no notion of a deleted flag, so a flagged row would keep
+        // showing up there: the header row is moved out of C16PE_SXEDIO into the archive table
+        // instead (both statements in one transaction). The blob row is left untouched — putting
+        // the header row back is all it takes to restore the drawing with its scan.
+        // Archive key: a v7 GUID (time-ordered, so the archive reads in deletion order).
         await using var con = Open();
-        var rows = await con.ExecuteAsync(
-            $"update {_owner}.C16PE_SXEDIO set DELETED = 1 where SXEDIO_ID = :id and nvl(DELETED, 0) = 0", new { id });
-        return rows > 0;
+        await con.OpenAsync(ct);
+        await using var tx = await con.BeginTransactionAsync(ct);
+        var args = new { did = Guid.CreateVersion7().ToString(), deletedBy, id };
+        var archived = await con.ExecuteAsync(new CommandDefinition(
+            $@"insert into {_owner}.C16PE_SXEDIO_DELETED
+               (ID, DELETED_AT, DELETED_BY,
+                SXEDIO_ID, KODIKOS_ERG, ARITHMOS_SXED, EIDOS_SXED_ID, TITLOS_ERG, TITLOS_SXED,
+                PERIGRAFH_SXED, PERIGRAFH_ERG, YPOKAT_ERG_ID, HMER, XOROS_APOTH_ID, KATHG_ERG_ID,
+                HSTR_ID, DATE_INS, USER_INS, MAZIKI_KATAXWRISI)
+               select :did, sysdate, :deletedBy,
+                      s.SXEDIO_ID, s.KODIKOS_ERG, s.ARITHMOS_SXED, s.EIDOS_SXED_ID, s.TITLOS_ERG, s.TITLOS_SXED,
+                      s.PERIGRAFH_SXED, s.PERIGRAFH_ERG, s.YPOKAT_ERG_ID, s.HMER, s.XOROS_APOTH_ID, s.KATHG_ERG_ID,
+                      s.HSTR_ID, s.DATE_INS, s.USER_INS, s.MAZIKI_KATAXWRISI
+                 from {_owner}.C16PE_SXEDIO s where s.SXEDIO_ID = :id", args, tx, cancellationToken: ct));
+        if (archived == 0)
+        {
+            await tx.RollbackAsync(ct);
+            return false;
+        }
+        await con.ExecuteAsync(new CommandDefinition(
+            $"delete from {_owner}.C16PE_SXEDIO where SXEDIO_ID = :id", args, tx, cancellationToken: ct));
+        await tx.CommitAsync(ct);
+        return true;
     }
 
     public async Task<ArchiveStats> GetStatsAsync(CancellationToken ct = default)
     {
         await using var con = Open();
         var total = await con.ExecuteScalarAsync<int>(new CommandDefinition(
-            $"select count(*) from {_owner}.C16PE_SXEDIO s where nvl(s.DELETED, 0) = 0", cancellationToken: ct));
+            $"select count(*) from {_owner}.C16PE_SXEDIO s", cancellationToken: ct));
         var perKathg = (await con.QueryAsync<(string?, int, long?)>(new CommandDefinition(
             $@"select k.PERIGRAFH, count(*), s.KATHG_ERG_ID from {_owner}.C16PE_SXEDIO s
                left join {_owner}.C16PE_KATHGORIA_ERG k on k.KATHG_ERG_ID = s.KATHG_ERG_ID
-               where nvl(s.DELETED, 0) = 0
                group by k.PERIGRAFH, s.KATHG_ERG_ID order by count(*) desc", cancellationToken: ct)))
             .Select(t => new StatItem(t.Item1 ?? "— χωρίς κατηγορία —", t.Item2, t.Item3)).ToList();
         var perEidos = (await con.QueryAsync<(string?, int, long?)>(new CommandDefinition(
             $@"select e.PERIGRAFH, count(*), s.EIDOS_SXED_ID from {_owner}.C16PE_SXEDIO s
                left join {_owner}.C16PE_EIDOS_SXED e on e.EIDOS_SXED_ID = s.EIDOS_SXED_ID
-               where nvl(s.DELETED, 0) = 0
                group by e.PERIGRAFH, s.EIDOS_SXED_ID order by count(*) desc", cancellationToken: ct)))
             .Select(t => new StatItem(t.Item1 ?? "— χωρίς είδος —", t.Item2, t.Item3)).ToList();
         var perMonada = (await con.QueryAsync<(string?, int, long?)>(new CommandDefinition(
             $@"select h.TITLE, count(*), s.HSTR_ID from {_owner}.C16PE_SXEDIO s
                left join {_commonOwner}.G11HAF_STRUCTURE h on h.HSTR_ID = s.HSTR_ID
-               where nvl(s.DELETED, 0) = 0
                group by h.TITLE, s.HSTR_ID order by count(*) desc", cancellationToken: ct)))
             .Select(t => new StatItem(t.Item1 ?? "— χωρίς μονάδα —", t.Item2, t.Item3)).ToList();
         return new ArchiveStats(total, perKathg, perEidos, perMonada);

@@ -95,9 +95,11 @@ public interface IDrawingStore
     /// <summary>Updates the metadata of an existing drawing (file untouched). False if id not found.</summary>
     Task<bool> UpdateAsync(long id, ImportMeta meta, CancellationToken ct = default);
 
-    /// <summary>Soft delete: sets DELETED=1 on the header row only; the blob row is never
-    /// touched, so nothing is physically removed and clearing the flag restores the drawing.</summary>
-    Task<bool> SoftDeleteAsync(long id, CancellationToken ct = default);
+    /// <summary>Delete: moves the header row into the C16PE_SXEDIO_DELETED archive and removes it
+    /// from C16PE_SXEDIO — the legacy application knows nothing about a deleted flag, so the row has
+    /// to leave the table it reads. The blob row is never touched, so moving the header row back
+    /// restores the drawing with its scan.</summary>
+    Task<bool> DeleteAsync(long id, string? deletedBy, CancellationToken ct = default);
 
     Task<ArchiveStats> GetStatsAsync(CancellationToken ct = default);
 
