@@ -11,6 +11,11 @@ public static class DrawingEndpoints
 {
     public static RouteGroupBuilder MapDrawingEndpoints(this RouteGroupBuilder api)
     {
+        // What the import UI may offer — single source of truth for accepted types
+        // (FileTypes + the CAD feature flag); the SPA builds its file pickers and
+        // manual/help content from this instead of hardcoding the list.
+        api.MapGet("/config", (CadRaster cad) => new { cadEnabled = cad.Enabled, accept = FileTypes.Accept(cad.Enabled) });
+
         api.MapGet("/stats", (IDrawingStore store, CancellationToken ct) => store.GetStatsAsync(ct));
 
         api.MapGet("/drawings", (IDrawingStore store, CancellationToken ct,
@@ -78,7 +83,7 @@ public static class DrawingEndpoints
         var head = new byte[FileTypes.HeadLength];
         var n = await opened.Value.Stream.ReadAsync(head, ct);
         opened.Value.Stream.Seek(0, SeekOrigin.Begin);
-        var (ext, mime) = FileTypes.Sniff(head.AsSpan(0, n)) switch
+        var (ext, mime) = FileTypes.Resolve(FileTypes.Sniff(head.AsSpan(0, n)), opened.Value.Stream) switch
         {
             "pdf" => (".pdf", "application/pdf"),
             "tiff" => (".tif", "image/tiff"),
@@ -88,6 +93,10 @@ public static class DrawingEndpoints
             "bmp" => (".bmp", "image/bmp"),
             "webp" => (".webp", "image/webp"),
             "dwg" => (".dwg", "application/acad"),
+            "dxf" => (".dxf", "image/vnd.dxf"),
+            "dgn" => (".dgn", "image/vnd.dgn"),
+            "dwf" => (".dwf", "model/vnd.dwf"),
+            "dwfx" => (".dwfx", "model/vnd.dwfx+xps"),
             "zip" => (".zip", "application/zip"),
             _ => (".bin", "application/octet-stream"),
         };
@@ -101,7 +110,7 @@ public static class DrawingEndpoints
         return Results.Stream(opened.Value.Stream, mime, name, enableRangeProcessing: true);
     }
 
-    private static async Task<IResult> Import(HttpRequest req, ClaimsPrincipal user, IDrawingStore store, CancellationToken ct)
+    private static async Task<IResult> Import(HttpRequest req, ClaimsPrincipal user, IDrawingStore store, CadRaster cad, CancellationToken ct)
     {
         var form = await req.ReadFormAsync(ct);
         var file = form.Files.GetFile("file");
@@ -121,11 +130,11 @@ public static class DrawingEndpoints
         // Reject by content, not by extension/Content-Type (both are client-supplied and unreliable).
         var head = new byte[FileTypes.HeadLength];
         var n = await stream.ReadAsync(head, ct);
-        var type = FileTypes.Sniff(head.AsSpan(0, n));
-        if (!FileTypes.IsSupported(type))
+        var type = FileTypes.Resolve(FileTypes.Sniff(head.AsSpan(0, n)), stream);
+        if (!FileTypes.IsSupported(type) || (FileTypes.IsCad(type) && !cad.Enabled))
         {
             Log.Information("Import rejected for {User}: {FileName} sniffed as '{Type}'", user.Identity?.Name, file.FileName, type);
-            return Results.BadRequest(new { error = FileTypes.UnsupportedMessage(type), fileType = type });
+            return Results.BadRequest(new { error = FileTypes.UnsupportedMessage(type, cad.Enabled), fileType = type });
         }
         stream.Seek(0, SeekOrigin.Begin); // form files are buffered => seekable
         var id = await store.ImportAsync(meta, stream, file.Length, ct);

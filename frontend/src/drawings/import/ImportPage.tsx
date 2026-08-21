@@ -13,13 +13,15 @@ import { useLeaveGuard } from '../../components/useLeaveGuard'
 import { ForbiddenPage } from '../../pages/StatusPage'
 import { appendMeta, EMPTY_META, type MetaValues } from '../meta/fields'
 import { MetaCells, MetaForm } from '../meta/MetaForm'
-import { ACCEPT } from './accept'
+import { useAppConfig } from '../../components/useAppConfig'
+import { ACCEPT_FALLBACK } from './accept'
 
 /** «Καταχώριση σχεδίου» — a full page: one file plus its metadata. The fields
     come from META_FIELDS — this screen only decides where they sit in the
     table. On success it returns to the list, which announces the new Α/Α. */
 export default function ImportPage() {
   const user = useOutletContext<UserInfo>()
+  const accept = useAppConfig()?.accept ?? ACCEPT_FALLBACK
   const navigate = useNavigate()
   const location = useLocation()
   // The list passes its query string, so returning lands on the same filtered page.
@@ -161,7 +163,7 @@ export default function ImportPage() {
                          onDragLeave={() => setDragOver(false)}
                          onDrop={dropFile}>
                       <input ref={fileRef} name="file" type="file" className="drop-zone-input"
-                             accept={ACCEPT}
+                             accept={accept}
                              onChange={(e) => {
                                const f = e.target.files?.[0]
                                setFileName(f?.name ?? ''); setFileSize(f?.size ?? null)

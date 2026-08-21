@@ -170,7 +170,10 @@ export default function Viewer({ id, onClose }: ViewerProps) {
           {[drawing?.titlosSxed, drawing?.titlosErg].filter(Boolean).join(' — ')}
         </span>
         <span className="viewer-buttons">
-          {info?.type !== 'pdf' && (
+          {/* No canvas to act on when the file cannot be previewed (unsupported
+              type, or a CAD file while the CAD feature is off) — only the
+              download of the original still makes sense. */}
+          {!viewQuery.isError && info?.type !== 'pdf' && (
             <>
               <span className="btn-group">
                 <button onClick={() => zoom(1 / 1.5)} title="Σμίκρυνση">−</button>
@@ -196,7 +199,14 @@ export default function Viewer({ id, onClose }: ViewerProps) {
       </div>
       <div className="viewer-body">
         {viewQuery.isError && (
-          <div className="viewer-message">Σφάλμα: {(viewQuery.error as Error).message}</div>
+          <div className="viewer-message">
+            <strong>Δεν είναι δυνατή η προβολή του αρχείου</strong>
+            {(viewQuery.error as Error).message}
+            {canPrint
+              ? <span>Μπορείτε να κατεβάσετε το πρωτότυπο («Λήψη πρωτοτύπου») και να το ανοίξετε
+                  με το κατάλληλο πρόγραμμα στον υπολογιστή σας.</span>
+              : <span>Το πρωτότυπο αρχείο παραμένει αποθηκευμένο στο αρχείο.</span>}
+          </div>
         )}
         {viewQuery.isPending && (
           <div className="viewer-message">

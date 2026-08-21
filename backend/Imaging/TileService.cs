@@ -6,7 +6,14 @@ using Mis.YpepaScan.Web.Data;
 
 namespace Mis.YpepaScan.Web.Imaging;
 
-public record ViewInfo(string Type, string Url, string ThumbUrl, int? Width, int? Height);
+/// <summary>
+/// How to view a drawing. <paramref name="Source"/> is the sniffed type of the
+/// original file ("tiff", "dxf", …) — kept in the cached meta.json so the
+/// cache-hit path can still tell a CAD drawing from a scan without touching the
+/// blob (the CAD feature flag has to gate cached pyramids too). Null in entries
+/// written before this field existed, i.e. never CAD.
+/// </summary>
+public record ViewInfo(string Type, string Url, string ThumbUrl, int? Width, int? Height, string? Source = null);
 
 /// <summary>
 /// Prepares drawings for in-browser viewing. TIFFs (and other images) become
@@ -15,7 +22,7 @@ public record ViewInfo(string Type, string Url, string ThumbUrl, int? Width, int
 /// generation runs once, ever. PDFs never touch the cache: browsers render them
 /// natively, so they are streamed straight from the store (with Range support).
 /// </summary>
-public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILogger<TileService> log)
+public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, CadRaster cad, ILogger<TileService> log)
 {
     static TileService()
     {
@@ -44,6 +51,10 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
         {
             if (cached.Type != "pdf")
             {
+                // A pyramid rendered while the CAD feature was on must stop being
+                // served once it is off — the flag gates the cache-hit path too.
+                if (cached.Source is { } src && FileTypes.IsCad(src) && !cad.Enabled)
+                    throw new UnsupportedFileException(src, FileTypes.UnsupportedMessage(src, cadEnabled: false));
                 Touch(id); // record use for LRU eviction
                 return cached;
             }
@@ -66,11 +77,11 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
             // are decided without ever being copied to disk.
             var head = new byte[FileTypes.HeadLength];
             var n = await src.ReadAsync(head, ct);
-            var type = FileTypes.Sniff(head.AsSpan(0, n));
-            if (!FileTypes.IsSupported(type))
+            var type = FileTypes.Resolve(FileTypes.Sniff(head.AsSpan(0, n)), src);
+            if (!FileTypes.IsSupported(type) || (FileTypes.IsCad(type) && !cad.Enabled))
             {
                 log.LogWarning("Drawing {Id}: unsupported file type '{Type}', cannot view", id, type);
-                throw new UnsupportedFileException(type, FileTypes.UnsupportedMessage(type));
+                throw new UnsupportedFileException(type, FileTypes.UnsupportedMessage(type, cad.Enabled));
             }
             if (type == "pdf")
             {
@@ -87,7 +98,11 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
             ViewInfo info;
             try
             {
-                try
+                if (FileTypes.IsCad(type))
+                {
+                    info = RenderCad(id, type, originalPath);
+                }
+                else try
                 {
                     info = PrepareDzi(id, originalPath);
                 }
@@ -118,6 +133,8 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
                 // input; keeping it would roughly double the cache footprint.
                 TryDelete(originalPath);
             }
+
+            info = info with { Source = type };
 
             // Atomic publish: readers must never see a half-written meta.json.
             var tmp = MetaPath(id) + ".tmp";
@@ -292,7 +309,42 @@ public sealed class TileService(IConfiguration cfg, IWebHostEnvironment env, ILo
         }
 
         log.LogInformation("Drawing {Id}: pyramid ready", id);
-        return new ViewInfo("dzi", $"/tiles/{id}/img.dzi", $"/tiles/{id}/thumb.jpg", w, h);
+        // Version the URLs with the build time. Tiles are browser-cached as
+        // immutable, but a pyramid CAN be rebuilt with different content (eviction
+        // after a render-setting change, e.g. Cad:RasterPixels): with unversioned
+        // URLs the browser then mixes a stale cached .dzi with the new pyramid,
+        // deep-zoom tiles 404, and the viewer's self-heal resets the view on every
+        // zoom. OpenSeadragon propagates the .dzi query string to every tile URL.
+        var v = DateTime.UtcNow.Ticks;
+        return new ViewInfo("dzi", $"/tiles/{id}/img.dzi?v={v}", $"/tiles/{id}/thumb.jpg?v={v}", w, h);
+    }
+
+    /// <summary>
+    /// CAD files are vectors, not images — libvips cannot touch them. Aspose.CAD
+    /// renders them once to a temporary high-resolution PNG (model space, white
+    /// background) and that raster is tiled like any scan.
+    /// </summary>
+    private ViewInfo RenderCad(long id, string type, string originalPath)
+    {
+        var png = Path.Combine(Dir(id), "cad.png");
+        try
+        {
+            log.LogInformation("Drawing {Id}: rendering {Type} via Aspose.CAD...", id, type);
+            cad.Render(originalPath, png);
+            var info = PrepareDzi(id, png);
+            log.LogInformation("Drawing {Id}: CAD render tiled", id);
+            return info;
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            log.LogWarning(e, "Drawing {Id}: {Type} file could not be rendered", id, type);
+            throw new UnsupportedFileException(type,
+                $"Το αρχείο ({FileTypes.Label(type)}) δεν μπόρεσε να αναγνωσθεί — πιθανόν κατεστραμμένο ή σε μη υποστηριζόμενη παραλλαγή.");
+        }
+        finally
+        {
+            TryDelete(png);
+        }
     }
 
     /// <summary>

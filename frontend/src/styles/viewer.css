@@ -27,6 +27,10 @@
 .viewer-body { flex: 1; display: flex; min-height: 0; position: relative; }
 .viewer-canvas { flex: 1; min-width: 0; border: 0; background: #23282e; }
 .viewer-message { position: absolute; top: 40%; left: 0; right: 320px; text-align: center; color: #aebacb; }
+/* Multi-line variant: the "cannot be previewed" state (unsupported type, or a
+   CAD file while the CAD feature is off) — headline, server message, what to do. */
+.viewer-message strong { display: block; margin-bottom: 8px; font-size: 15px; color: #d6dde6; }
+.viewer-message span { display: block; max-width: 440px; margin: 8px auto 0; font-size: 13px; line-height: 1.5; }
 .viewer-meta {
   width: 310px; overflow-y: auto;
   background: var(--card);
