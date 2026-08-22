@@ -12,7 +12,7 @@ backend/wwwroot/
 
 # Runtime data (never in source control)
 backend/tile-cache/
-backend/demo-data/
+backend/Data/Demo/data/
 backend/logs/
 backend/auth.json
 

@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <!-- Demo-mode sample drawings (seeded by DemoSeeder); not under wwwroot, so included explicitly. -->
-    <Content Include="demo-assets\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Data\Demo\assets\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

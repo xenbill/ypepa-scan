@@ -6,7 +6,7 @@ namespace Mis.YpepaScan.Web.Data;
 /// <summary>
 /// Creates sample data for demo mode: lookup tables, a handful of drawing records
 /// and synthetic 10000x15000 bilevel TIFFs (the size class of the real scans),
-/// plus a real AutoCAD DXF from demo-assets/ so the CAD path can be exercised.
+/// plus a real AutoCAD DXF from Data/Demo/assets/ so the CAD path can be exercised.
 /// </summary>
 public static class DemoSeeder
 {

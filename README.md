@@ -15,8 +15,11 @@ settings: always-on app pool, preload/warm-up, upload limit).
 ## Structure
 
 - `backend` — ASP.NET Core (.NET 10) minimal API + serves the built frontend
-  from `wwwroot`. `Auth/` (JWT + login backends), `Data/` (Oracle/Demo stores,
-  DTOs), `Endpoints/` (drawings, lookups, tiles), `Imaging/` (libvips tiling,
+  from `wwwroot`. `Auth/` (JWT + login backends), `Data/` (`IDrawingStore`;
+  `Models/` — records split by concern: `DrawingModels`, `LookupModels`,
+  `StatsModels`; `Oracle/` — `OracleDrawingStore` as partial files per table:
+  `.Drawings`, `.Blob`, `.Archive`, `.Lookups`; `Demo/` — `DemoDrawingStore` +
+  seeder), `Endpoints/` (drawings, lookups, tiles), `Imaging/` (libvips tiling,
   file-type sniffing), `Utils/` (Serilog).
 - `frontend` — React + TypeScript (Vite). TanStack Query for data
   fetching/caching, React Router. `npm run build` type-checks and outputs into
@@ -279,7 +282,7 @@ local dev (`Storage:Mode=Demo`, `Auth:DevLogin=true`). Fill in
 and change `Jwt:Key` for production.
 
 Paths: `Cache:Dir` (default `<app>/tile-cache`), `Demo:Dir` (default
-`<app>/demo-data`).
+`<app>/Data/Demo/data`).
 
 CAD viewing: `Cad:Enabled` — the feature flag (default `true`; `false` rejects
 CAD files on import/view — the original still downloads — and hides every CAD
@@ -299,11 +302,11 @@ dotnet run --urls http://localhost:5580
 ```
 
 (Development environment → Demo store + dev login.) First start generates four
-sample 10000×15000 bilevel TIFFs under `backend/demo-data/` so the viewer can be
+sample 10000×15000 bilevel TIFFs under `backend/Data/Demo/data/` so the viewer can be
 exercised at realistic sizes, plus — when the CAD feature is enabled — a fifth
-drawing seeded from `backend/demo-assets/mechanical-sample.dxf`, a real AutoCAD
+drawing seeded from `backend/Data/Demo/assets/mechanical-sample.dxf`, a real AutoCAD
 DXF (CADKit sample drawing) that exercises the CAD render path. Delete
-`backend/demo-data/` to re-seed.
+`backend/Data/Demo/data/` to re-seed.
 
 ## How viewing works
 
