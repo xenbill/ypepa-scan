@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
-import { useNavigate, useRouteError } from 'react-router-dom'
+import { useNavigate, useRouteError } from 'react-router'
 
 /** Shared layout for 404 / error / unreachable states: big code, title, note, actions. */
 export function StatusPage({ code, title, message, children, detail }: {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useBlocker } from 'react-router-dom'
+import { useBlocker } from 'react-router'
 
 /**
  * Guards a page holding unsaved work (the import pages). While `when()` returns

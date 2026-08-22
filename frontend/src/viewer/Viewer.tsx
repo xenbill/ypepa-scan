@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext } from 'react-router'
 import OpenSeadragon from 'openseadragon'
 import { hasRight, type UserInfo } from '../api/auth'
 import { deleteDrawing, downloadFile, getDrawing, getViewInfo } from '../api/drawings'

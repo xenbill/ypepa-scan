@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react'
 import {
   createBrowserRouter, createRoutesFromElements, Outlet, Route,
   useLocation, useNavigate, useParams,
-} from 'react-router-dom'
+} from 'react-router'
 import { LoadingBlock } from '../components/Loading'
 import Toasts from '../components/toasts'
 import { NotFoundPage, RouteErrorPage } from '../pages/StatusPage'

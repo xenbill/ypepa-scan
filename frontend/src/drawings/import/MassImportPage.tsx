@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate, useOutletContext } from 'react-router-dom'
+import { useLocation, useNavigate, useOutletContext } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { hasRight, type UserInfo } from '../../api/auth'
 import { getLookups } from '../../api/lookups'

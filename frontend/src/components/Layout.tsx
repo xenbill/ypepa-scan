@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate, useOutletContext } from 'react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { APP_RIGHTS, hasRight, logout, type UserInfo } from '../api/auth'
 import { APP_VERSION } from '../version'

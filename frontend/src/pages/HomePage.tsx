@@ -1,4 +1,4 @@
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { hasRight, type UserInfo } from '../api/auth'
 import { getStats, type StatItem } from '../api/drawings'
